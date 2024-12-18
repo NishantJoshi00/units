@@ -5,7 +5,8 @@ use pofi_sys::server;
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
-    let config_path = std::env::args().nth(1).expect("config path not provided");
+    let config_path = std::env::args().nth(1);
+    let config_path = config_path.ok_or(anyhow::anyhow!("config path is required"))?;
 
     let config = runtime::types::Config::from_path(config_path.into())?;
     let server_config = config.server.clone();

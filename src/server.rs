@@ -17,6 +17,8 @@ impl Server {
     pub async fn start(self, config: runtime::types::ServerConfig) -> anyhow::Result<()> {
         let socket_addr = std::net::SocketAddr::new(config.host.parse()?, config.port);
 
+        tracing::info!(?socket_addr, "Starting server");
+
         let reflection_service = tonic_reflection::server::Builder::configure()
             .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
             .build_v1()?;

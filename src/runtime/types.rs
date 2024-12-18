@@ -34,7 +34,7 @@ pub struct RuntimeConfig {
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct DriverConfig {
     pub driver_limit: u32,
-    pub driver_timeout: u32,
+    pub driver_timeout: u32, // in seconds
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]

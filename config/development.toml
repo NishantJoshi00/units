@@ -1,0 +1,14 @@
+[server]
+host = "127.0.0.1"
+port = 8080
+
+[runtime]
+name = "finternet"
+version = "0.1.0"
+
+[driver]
+driver_limit = 100
+driver_timeout = 200
+
+[process]
+[platform]
