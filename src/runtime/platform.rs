@@ -35,3 +35,30 @@ impl Platform {
         })
     }
 }
+
+impl Storage {
+    pub fn get(&self, key: &str) -> anyhow::Result<Option<String>> {
+        self.kev
+            .read()
+            .map(|x| x.get(key).cloned())
+            .map_err(|e| anyhow::anyhow!("Error reading storage: {:?}", e))
+    }
+
+    pub fn set(&self, key: &str, value: &str) -> anyhow::Result<()> {
+        self.kev
+            .write()
+            .map(|mut x| {
+                x.insert(key.to_string(), value.to_string());
+            })
+            .map_err(|e| anyhow::anyhow!("Error writing to storage: {:?}", e))
+    }
+
+    pub fn delete(&self, key: &str) -> anyhow::Result<()> {
+        self.kev
+            .write()
+            .map(|mut x| {
+                x.remove(key);
+            })
+            .map_err(|e| anyhow::anyhow!("Error deleting from storage: {:?}", e))
+    }
+}

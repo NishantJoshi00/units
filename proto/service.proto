@@ -10,11 +10,22 @@ service Driver {
   rpc UnloadDriver(UnloadDriverRequest) returns (UnloadDriverResponse);
 }
 
-message LoadDriverRequest { string driver_name = 1; }
-
-message LoadDriverResponse {
+message LoadDriverRequest {
   string driver_name = 1;
   string driver_version = 2;
+  BinaryType driver_type = 3;
+  bytes driver_binary = 4;
+}
+
+enum BinaryType {
+  WAT = 0;
+  WASM = 1;
+}
+
+message LoadDriverResponse {
+  string driver_id = 1;
+  string driver_name = 2;
+  string driver_version = 3;
 }
 
 message UnloadDriverRequest { string driver_name = 1; }
@@ -48,5 +59,9 @@ service Execution {
   rpc Execute(ExecutionRequest) returns (ExecutionResponse);
 }
 
-message ExecutionRequest { string command = 1; }
+message ExecutionRequest {
+  string name = 1;
+  BinaryType type = 2;
+  bytes binary = 3;
+}
 message ExecutionResponse { string output = 1; }

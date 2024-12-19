@@ -14,6 +14,7 @@ pub mod process;
 pub mod resolver;
 mod service;
 pub mod types;
+pub mod binding;
 
 #[derive(Clone)]
 pub struct Runtime {
