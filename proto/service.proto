@@ -23,7 +23,6 @@ enum BinaryType {
 }
 
 message LoadDriverResponse {
-  string driver_id = 1;
   string driver_name = 2;
   string driver_version = 3;
 }
@@ -61,7 +60,8 @@ service Execution {
 
 message ExecutionRequest {
   string name = 1;
-  BinaryType type = 2;
-  bytes binary = 3;
+  string input = 2;
+  BinaryType type = 3;
+  bytes binary = 4;
 }
 message ExecutionResponse { string output = 1; }

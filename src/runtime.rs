@@ -46,6 +46,9 @@ impl Runtime {
         );
         let mut linker = wasmtime::Linker::new(&self.process_layer.engine);
         (self.driver_layer, self.platform_layer).bind(&mut linker)?;
+
+        wasi_common::sync::add_to_linker(&mut linker, |state| &mut state.wasi)?;
+
         let instance = linker.instantiate(&mut store, &module)?;
         let memory = instance
             .get_memory(&mut store, "memory")

@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 
+use wasi_common::sync::WasiCtxBuilder;
+use wasi_common::WasiCtx;
+
 use crate::types::WasmString;
 
 use super::driver::DriverRuntime;
@@ -197,6 +200,7 @@ impl Binding<()> for Platform {
 pub struct State {
     pub resolver: super::resolver::Resolver,
     pub descriptors: HashMap<String, Descriptor>,
+    pub wasi: WasiCtx,
 }
 
 pub struct Descriptor {
@@ -209,6 +213,7 @@ impl State {
         Self {
             resolver,
             descriptors: HashMap::new(),
+            wasi: WasiCtxBuilder::new().build(),
         }
     }
 }

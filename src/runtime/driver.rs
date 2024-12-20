@@ -31,4 +31,22 @@ impl DriverRuntime {
             config,
         })
     }
+
+    pub fn add_driver(&self, name: String, module: wasmtime::Module) -> anyhow::Result<()> {
+        self.drivers
+            .write()
+            .map_err(|e| anyhow::anyhow!("Poisoned Lock {:?}", e))?
+            .insert(name, module);
+
+        Ok(())
+    }
+
+    pub fn remove_driver(&self, name: String) -> anyhow::Result<()> {
+        self.drivers
+            .write()
+            .map_err(|e| anyhow::anyhow!("Poisoned Lock {:?}", e))?
+            .remove(&name);
+
+        Ok(())
+    }
 }

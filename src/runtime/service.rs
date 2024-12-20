@@ -1,5 +1,9 @@
 use tonic::{Request, Response};
 
+use crate::service::proto_types::BinaryType;
+
+use super::Runtime;
+
 mod server_traits {
     pub use crate::service::proto_types::{
         bind_server::Bind, driver_server::Driver, execution_server::Execution,
@@ -18,10 +22,28 @@ mod types {
 impl server_traits::Execution for super::Runtime {
     async fn execute(
         &self,
-        _request: Request<types::ExecutionRequest>,
+        request: Request<types::ExecutionRequest>,
     ) -> Result<Response<types::ExecutionResponse>, tonic::Status> {
-        todo!()
+        let request = request.into_inner();
+        let output =
+            execte(self.clone(), request).map_err(|e| tonic::Status::internal(e.to_string()))?;
+        Ok(Response::new(output))
     }
+}
+
+fn execte(
+    runtime: Runtime,
+    request: types::ExecutionRequest,
+) -> anyhow::Result<types::ExecutionResponse> {
+    let module = match request.r#type() {
+        BinaryType::Wat | BinaryType::Wasm => {
+            wasmtime::Module::new(&runtime.process_layer.engine, request.binary)?
+        }
+    };
+
+    let output = runtime.exec(module, request.input)?;
+
+    Ok(types::ExecutionResponse { output })
 }
 
 #[tonic::async_trait]
@@ -45,15 +67,39 @@ impl server_traits::Bind for super::Runtime {
 impl server_traits::Driver for super::Runtime {
     async fn load_driver(
         &self,
-        _request: Request<types::LoadDriverRequest>,
+        request: Request<types::LoadDriverRequest>,
     ) -> Result<Response<types::LoadDriverResponse>, tonic::Status> {
-        todo!()
+        let request = request.into_inner();
+
+        let module = match request.driver_type() {
+            BinaryType::Wat | BinaryType::Wasm => {
+                wasmtime::Module::new(&self.driver_layer.engine, request.driver_binary)
+                    .map_err(|e| tonic::Status::internal(e.to_string()))?
+            }
+        };
+
+        self.driver_layer
+            .add_driver(request.driver_name.clone(), module)
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        Ok(tonic::Response::new(types::LoadDriverResponse {
+            driver_name: request.driver_name,
+            driver_version: request.driver_version,
+        }))
     }
 
     async fn unload_driver(
         &self,
-        _request: Request<types::UnloadDriverRequest>,
+        request: Request<types::UnloadDriverRequest>,
     ) -> Result<Response<types::UnloadDriverResponse>, tonic::Status> {
-        todo!()
+        let request = request.into_inner();
+
+        self.driver_layer
+            .remove_driver(request.driver_name.clone())
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        Ok(tonic::Response::new(types::UnloadDriverResponse {
+            driver_name: request.driver_name,
+        }))
     }
 }
