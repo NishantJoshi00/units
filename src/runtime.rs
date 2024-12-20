@@ -8,13 +8,17 @@
 //!    the assets.
 //!
 
+use crate::types::WasmString;
+
+use self::binding::Binding;
+
+pub mod binding;
 pub mod driver;
 pub mod platform;
 pub mod process;
 pub mod resolver;
 mod service;
 pub mod types;
-pub mod binding;
 
 #[derive(Clone)]
 pub struct Runtime {
@@ -33,6 +37,29 @@ impl Runtime {
             platform_layer: platform::Platform::init(config.platform)?,
             config: config.runtime,
         })
+    }
+
+    pub fn exec(self, module: wasmtime::Module, input: String) -> anyhow::Result<String> {
+        let mut store = wasmtime::Store::new(
+            &self.process_layer.engine,
+            binding::State::new(self.driver_layer.resolver.clone()),
+        );
+        let mut linker = wasmtime::Linker::new(&self.process_layer.engine);
+        (self.driver_layer, self.platform_layer).bind(&mut linker)?;
+        let instance = linker.instantiate(&mut store, &module)?;
+        let memory = instance
+            .get_memory(&mut store, "memory")
+            .ok_or_else(|| anyhow::anyhow!("No memory"))?;
+
+        let input = WasmString::new(&input);
+        let loaded_str = input.allocate_on_wasm(&memory, &mut store)?;
+
+        let main = instance.get_typed_func::<(i32, i32), (i32, i32)>(&mut store, "main")?;
+        let result = main.call(&mut store, loaded_str)?;
+
+        let output = WasmString::from_memory(&memory, &store, result)?;
+
+        Ok(output.into_str().to_string())
     }
 }
 
