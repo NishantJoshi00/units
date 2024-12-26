@@ -11,6 +11,8 @@
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
+use std::sync::Mutex;
+
 use super::types;
 
 #[derive(Clone)]
@@ -21,6 +23,7 @@ pub struct Platform {
 
 #[derive(Clone)]
 pub struct Storage {
+    pub redis: Arc<Mutex<redis::Client>>,
     pub kev: Arc<RwLock<HashMap<String, String>>>,
 }
 
@@ -29,6 +32,7 @@ impl Platform {
         tracing::debug!("Initializing platform");
         Ok(Self {
             storage: Storage {
+                redis: Arc::new(Mutex::new(redis::Client::open("redis://127.0.0.1/")?)),
                 kev: Arc::new(RwLock::new(HashMap::new())),
             },
             config,
@@ -45,6 +49,13 @@ impl Storage {
     }
 
     pub fn set(&self, key: &str, value: &str) -> anyhow::Result<()> {
+        let client = self
+            .redis
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Error getting redis client: {:?}", e))?;
+        let mut con = client.get_connection()?;
+        redis::cmd("SET").arg(key).arg(value).exec(&mut con)?;
+
         self.kev
             .write()
             .map(|mut x| {
@@ -54,6 +65,13 @@ impl Storage {
     }
 
     pub fn delete(&self, key: &str) -> anyhow::Result<()> {
+        let client = self
+            .redis
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Error getting redis client: {:?}", e))?;
+        let mut con = client.get_connection()?;
+        redis::cmd("DEL").arg(key).exec(&mut con)?;
+
         self.kev
             .write()
             .map(|mut x| {
