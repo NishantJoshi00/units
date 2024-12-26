@@ -152,12 +152,15 @@ impl Binding<State> for (DriverRuntime, Platform) {
                              ad1_ptr: i32,
                              ad1_len: i32,
                              ad2_ptr: i32,
-                             ad2_len: i32| {
+                             ad2_len: i32,
+                             data_ptr: i32,
+                             data_len: i32,| {
             let driver = driver.clone();
             let platform = platform.clone();
 
             let ad1 = WasmString::from_caller(&mut caller, (ad1_ptr, ad1_len))?;
             let ad2 = WasmString::from_caller(&mut caller, (ad2_ptr, ad2_len))?;
+            let data = WasmString::from_caller(&mut caller, (data_ptr, data_len))?;
 
             let descriptors = caller
                 .data()
@@ -195,21 +198,26 @@ impl Binding<State> for (DriverRuntime, Platform) {
 
             let input1 = serde_json::to_string(&desc1.account_info)?;
             let input2 = serde_json::to_string(&desc2.account_info)?;
+            let data = data.into_str();
 
             let loaded_input1 =
                 WasmString::new(&input1).allocate_on_wasm(&lower_memory, &mut lower_store)?;
             let loaded_input2 =
                 WasmString::new(&input2).allocate_on_wasm(&lower_memory, &mut lower_store)?;
+            let loaded_input3 =
+                WasmString::new(data).allocate_on_wasm(&lower_memory, &mut lower_store)?;
 
             let loaded_input = (
                 loaded_input1.0,
                 loaded_input1.1,
                 loaded_input2.0,
                 loaded_input2.1,
+                loaded_input3.0,
+                loaded_input3.1,
             );
 
             let transfer_caller = lower_instance
-                .get_typed_func::<(i32, i32, i32, i32), ()>(&mut lower_store, "transfer")?;
+                .get_typed_func::<(i32, i32, i32, i32, i32, i32), ()>(&mut lower_store, "transfer")?;
 
             transfer_caller.call(&mut lower_store, loaded_input)?;
 
