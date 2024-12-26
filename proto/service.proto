@@ -41,17 +41,22 @@ service Bind {
 
 message BindRequest {
   string driver_name = 1;
-  string device_name = 2;
+  string path = 2;
+  string account_info = 3;
 }
 
 message BindResponse {
   string driver_name = 1;
-  string device_name = 2;
+  string path = 2;
+  string account_info = 3;
 }
 
-message UnbindRequest { string device_name = 1; }
+message UnbindRequest { string path = 1; }
 
-message UnbindResponse { string driver_name = 1; }
+message UnbindResponse {
+  string driver_name = 1;
+  string account_info = 3;
+}
 
 service Execution {
   // Execute

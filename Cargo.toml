@@ -31,6 +31,8 @@ prost = "0.13"
 
 nanoid = "0.4.0"
 
+redis = { version = "*" }
+
 [build-dependencies]
 cargo_metadata = "0.15.4"
 tonic-build = "0.12.2"

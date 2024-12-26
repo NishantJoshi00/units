@@ -50,16 +50,51 @@ fn execte(
 impl server_traits::Bind for super::Runtime {
     async fn bind(
         &self,
-        _request: Request<types::BindRequest>,
+        request: Request<types::BindRequest>,
     ) -> Result<Response<types::BindResponse>, tonic::Status> {
-        todo!()
+        let mut writer = self
+            .driver_layer
+            .resolver
+            .mount_points
+            .write()
+            .map_err(|_| tonic::Status::internal("Failed to lock mount points".to_string()))?;
+
+        let request = request.into_inner();
+        writer.insert(
+            request.path.clone(),
+            (request.driver_name.clone(), request.account_info.clone()),
+        );
+
+        let output = types::BindResponse {
+            driver_name: request.driver_name,
+            account_info: request.account_info,
+            path: request.path,
+        };
+
+        Ok(Response::new(output))
     }
 
     async fn unbind(
         &self,
-        _request: Request<types::UnbindRequest>,
+        request: Request<types::UnbindRequest>,
     ) -> Result<Response<types::UnbindResponse>, tonic::Status> {
-        todo!()
+        let mut writer = self
+            .driver_layer
+            .resolver
+            .mount_points
+            .write()
+            .map_err(|_| tonic::Status::internal("Failed to lock mount points".to_string()))?;
+
+        let request = request.into_inner();
+        let output = writer.remove(&request.path);
+
+        match output {
+            None => Err(tonic::Status::not_found("Path not found")),
+            Some((driver_name, account_info)) => Ok(Response::new(types::UnbindResponse {
+                driver_name,
+                account_info,
+            })),
+        }
     }
 }
 
