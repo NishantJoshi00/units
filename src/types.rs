@@ -1,5 +1,6 @@
 use anyhow::Context;
 
+#[derive(Debug)]
 pub struct WasmString<'a>(&'a str);
 
 /// # Safety

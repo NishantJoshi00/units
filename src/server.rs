@@ -2,6 +2,8 @@ pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
     tonic::include_file_descriptor_set!("finternet_descriptor");
 
 use tokio::signal::unix::{signal, SignalKind};
+use tonic_web::GrpcWebLayer;
+use tower_http::cors::CorsLayer;
 
 use crate::runtime;
 
@@ -71,6 +73,9 @@ impl Server {
             super::service::proto_types::driver_server::DriverServer::new(self.runtime);
 
         tonic::transport::Server::builder()
+            .accept_http1(true)
+            .layer(CorsLayer::permissive()) // Handle CORS
+            .layer(GrpcWebLayer::new())
             .add_service(reflection_service)
             .add_service(health_service)
             .add_service(execution_service)

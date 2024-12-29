@@ -24,67 +24,70 @@ impl Binding<State> for (DriverRuntime, Platform) {
 
         // this will create a asset descriptor
         // this is used to store the account information for this transaction
-        let intend =
-            move |mut caller: wasmtime::Caller<'_, State>, path_ptr: i32, path_len: i32| {
-                let driver = driver.clone();
-                let platform = platform.clone();
+        let intend = move |mut caller: wasmtime::Caller<'_, State>,
+                           path_ptr: i32,
+                           path_len: i32|
+              -> anyhow::Result<(i32, i32)> {
+            let driver = driver.clone();
+            let platform = platform.clone();
 
-                let path_name = WasmString::from_caller(&mut caller, (path_ptr, path_len))?;
+            let path_name = WasmString::from_caller(&mut caller, (path_ptr, path_len))?;
+            tracing::info!(system = "driver", func = "intend", "syscall");
 
-                let (driver_name, account_info) = caller
-                    .data()
-                    .resolver
-                    .mount_points
-                    .read()
-                    .map_err(|_| anyhow::anyhow!("lock failed"))?
-                    .get(path_name.into_str())
-                    .ok_or_else(|| anyhow::anyhow!("Path not found"))?
-                    .clone();
+            let (driver_name, account_info) = caller
+                .data()
+                .resolver
+                .mount_points
+                .read()
+                .map_err(|_| anyhow::anyhow!("lock failed"))?
+                .get(path_name.into_str())
+                .ok_or_else(|| anyhow::anyhow!("Path not found"))?
+                .clone();
 
-                let mut lower_store = wasmtime::Store::new(&driver.engine, ());
-                let mut lower_linker = wasmtime::Linker::new(&driver.engine);
-                platform.bind(&mut lower_linker)?;
+            let mut lower_store = wasmtime::Store::new(&driver.engine, ());
+            let mut lower_linker = wasmtime::Linker::new(&driver.engine);
+            platform.bind(&mut lower_linker)?;
 
-                let driver_module = driver
-                    .drivers
-                    .read()
-                    .map_err(|_| anyhow::anyhow!("lock failed"))?;
-                let driver_module = driver_module
-                    .get(&driver_name)
-                    .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
+            let driver_module = driver
+                .drivers
+                .read()
+                .map_err(|_| anyhow::anyhow!("lock failed"))?;
+            let driver_module = driver_module
+                .get(&driver_name)
+                .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
 
-                let lower_instance = lower_linker.instantiate(&mut lower_store, driver_module)?;
-                let lower_memory = lower_instance
-                    .get_memory(&mut lower_store, "memory")
-                    .ok_or_else(|| anyhow::anyhow!("No memory"))?;
+            let lower_instance = lower_linker.instantiate(&mut lower_store, driver_module)?;
+            let lower_memory = lower_instance
+                .get_memory(&mut lower_store, "memory")
+                .ok_or_else(|| anyhow::anyhow!("No memory"))?;
 
-                let input = WasmString::new(&account_info);
-                let loaded_input = input.allocate_on_wasm(&lower_memory, &mut lower_store)?;
-                let intend_caller = lower_instance
-                    .get_typed_func::<(i32, i32), (i32, i32)>(&mut lower_store, "intend")?;
+            let input = WasmString::new(&account_info);
+            let loaded_input = input.allocate_on_wasm(&lower_memory, &mut lower_store)?;
+            let intend_caller = lower_instance
+                .get_typed_func::<(i32, i32), (i32, i32)>(&mut lower_store, "intend")?;
 
-                let result = intend_caller.call(&mut lower_store, loaded_input)?;
-                let output = WasmString::from_memory(&lower_memory, &lower_store, result)?;
+            let result = intend_caller.call(&mut lower_store, loaded_input)?;
+            let output = WasmString::from_memory(&lower_memory, &lower_store, result)?;
 
-                // store output in the descriptor
-                let key = crate::utils::id::new();
-                caller.data_mut().descriptors.insert(
-                    key.clone(),
-                    Descriptor {
-                        driver_name,
-                        account_info: serde_json::from_str(output.into_str())?,
-                    },
-                );
+            // store output in the descriptor
+            let key = crate::utils::id::new();
+            caller.data_mut().descriptors.insert(
+                key.clone(),
+                Descriptor {
+                    driver_name,
+                    account_info: serde_json::from_str(output.into_str())?,
+                },
+            );
 
-                let memory = caller
-                    .get_export("memory")
-                    .and_then(|m| m.into_memory())
-                    .ok_or_else(|| anyhow::anyhow!("No memory"))?;
+            let memory = caller
+                .get_export("memory")
+                .and_then(|m| m.into_memory())
+                .ok_or_else(|| anyhow::anyhow!("No memory"))?;
 
-                let loaded_str = WasmString::new(&key).allocate_on_caller(&memory, &mut caller)?;
+            let loaded_str = WasmString::new(&key).allocate_on_caller(&memory, &mut caller)?;
 
-                Ok(loaded_str)
-            };
+            Ok(loaded_str)
+        };
 
         let driver = self.0.clone();
         let platform = self.1.clone();
@@ -92,6 +95,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
         // this will close the asset descriptor
         // this is used to finalize the transaction
         let done = move |mut caller: wasmtime::Caller<'_, State>, key_ptr: i32, key_len: i32| {
+            tracing::info!(system = "driver", func = "done", "syscall");
             let driver = driver.clone();
             let platform = platform.clone();
             let key = WasmString::from_caller(&mut caller, (key_ptr, key_len))?;
@@ -154,13 +158,16 @@ impl Binding<State> for (DriverRuntime, Platform) {
                              ad2_ptr: i32,
                              ad2_len: i32,
                              data_ptr: i32,
-                             data_len: i32,| {
+                             data_len: i32| {
+            tracing::info!(system = "driver", func = "transfer", "syscall");
             let driver = driver.clone();
             let platform = platform.clone();
 
             let ad1 = WasmString::from_caller(&mut caller, (ad1_ptr, ad1_len))?;
             let ad2 = WasmString::from_caller(&mut caller, (ad2_ptr, ad2_len))?;
             let data = WasmString::from_caller(&mut caller, (data_ptr, data_len))?;
+
+            tracing::info!(from_desc = ?ad1, to_desc = ?ad2, data = ?data, "transfer");
 
             let descriptors = caller
                 .data()
@@ -174,6 +181,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
             };
 
             ensure!(desc1.driver_name == desc2.driver_name, "driver mismatch");
+            tracing::info!(from_driver = %desc1.driver_name, to_driver = %desc2.driver_name, "transfer");
 
             let driver_name = desc1.driver_name.clone();
 
@@ -217,8 +225,12 @@ impl Binding<State> for (DriverRuntime, Platform) {
             );
 
             let transfer_caller = lower_instance
-                .get_typed_func::<(i32, i32, i32, i32, i32, i32), ()>(&mut lower_store, "transfer")?;
+                .get_typed_func::<(i32, i32, i32, i32, i32, i32), ()>(
+                    &mut lower_store,
+                    "transfer",
+                )?;
 
+            tracing::info!(from = %input1, to = %input2, data = %data, "transfer");
             transfer_caller.call(&mut lower_store, loaded_input)?;
 
             Ok(())
@@ -228,6 +240,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
         let platform = self.1.clone();
 
         let view = move |mut caller: wasmtime::Caller<'_, State>, desc_key: i32, desc_len: i32| {
+            tracing::info!(system = "driver", func = "view", "syscall");
             let driver = driver.clone();
             let platform = platform.clone();
 

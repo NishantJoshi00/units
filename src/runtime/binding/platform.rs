@@ -10,7 +10,11 @@ impl Binding<()> for Platform {
             "platform",
             "get",
             move |mut caller: wasmtime::Caller<'_, ()>, key_ptr: i32, key_len: i32| {
+                tracing::info!(system = "platform", func = "get", "syscall");
                 let key = WasmString::from_caller(&mut caller, (key_ptr, key_len))?;
+
+                tracing::info!(key = ?key, "Getting key");
+
                 let output = storage.get(key.into_str())?;
                 match output {
                     Some(value) => {
@@ -39,6 +43,7 @@ impl Binding<()> for Platform {
                   key_len: i32,
                   value_ptr: i32,
                   value_len: i32| {
+                tracing::info!(system = "platform", func = "set", "syscall");
                 let key = WasmString::from_caller(&mut caller, (key_ptr, key_len))?;
                 let value = WasmString::from_caller(&mut caller, (value_ptr, value_len))?;
 

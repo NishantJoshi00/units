@@ -45,6 +45,7 @@ impl Runtime {
             binding::State::new(self.driver_layer.resolver.clone()),
         );
         let mut linker = wasmtime::Linker::new(&self.process_layer.engine);
+
         (self.driver_layer, self.platform_layer).bind(&mut linker)?;
 
         wasi_common::sync::add_to_linker(&mut linker, |state| &mut state.wasi)?;
@@ -60,7 +61,11 @@ impl Runtime {
         let main = instance.get_typed_func::<(i32, i32), (i32, i32)>(&mut store, "main")?;
         let result = main.call(&mut store, loaded_str)?;
 
+        tracing::info!("main executed successfully");
+
         let output = WasmString::from_memory(&memory, &store, result)?;
+
+        tracing::info!(output = ?output, "output");
 
         Ok(output.into_str().to_string())
     }

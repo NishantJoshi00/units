@@ -26,7 +26,9 @@ impl server_traits::Execution for super::Runtime {
     ) -> Result<Response<types::ExecutionResponse>, tonic::Status> {
         let request = request.into_inner();
         let output =
-            execte(self.clone(), request).map_err(|e| tonic::Status::internal(e.to_string()))?;
+            execte(self.clone(), request).inspect_err(|err| {
+                tracing::error!(error = ?err, "Execution failed");
+            }).map_err(|e| tonic::Status::internal(e.to_string()))?;
         Ok(Response::new(output))
     }
 }
@@ -58,12 +60,25 @@ impl server_traits::Bind for super::Runtime {
             .mount_points
             .write()
             .map_err(|_| tonic::Status::internal("Failed to lock mount points".to_string()))?;
-
         let request = request.into_inner();
+
+        let reader = self
+            .driver_layer
+            .drivers
+            .read()
+            .map_err(|_| tonic::Status::internal("Failed to lock drivers".to_string()))?;
+
+        if !reader.contains_key(&request.driver_name) {
+            tracing::error!(name = %request.driver_name, "Driver not found");
+            return Err(tonic::Status::not_found("Driver not found"));
+        }
+
         writer.insert(
             request.path.clone(),
             (request.driver_name.clone(), request.account_info.clone()),
         );
+
+        tracing::info!(path = %request.path, driver = %request.driver_name, account_info = %request.account_info, "Path bound");
 
         let output = types::BindResponse {
             driver_name: request.driver_name,
@@ -106,12 +121,16 @@ impl server_traits::Driver for super::Runtime {
     ) -> Result<Response<types::LoadDriverResponse>, tonic::Status> {
         let request = request.into_inner();
 
+        tracing::info!(name = %request.driver_name, "Adding driver");
+
         let module = match request.driver_type() {
             BinaryType::Wat | BinaryType::Wasm => {
                 wasmtime::Module::new(&self.driver_layer.engine, request.driver_binary)
                     .map_err(|e| tonic::Status::internal(e.to_string()))?
             }
         };
+
+        tracing::info!(name = ?module.name(), "Module Created");
 
         self.driver_layer
             .add_driver(request.driver_name.clone(), module)
