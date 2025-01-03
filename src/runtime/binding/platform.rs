@@ -1,15 +1,16 @@
 use crate::runtime::platform::Platform;
 use crate::types::WasmString;
 
+use super::driver::PlatformState;
 use super::Binding;
 
-impl Binding<()> for Platform {
-    fn bind(self, linker: &mut wasmtime::Linker<()>) -> anyhow::Result<()> {
+impl Binding<PlatformState> for Platform {
+    fn bind(self, linker: &mut wasmtime::Linker<PlatformState>) -> anyhow::Result<()> {
         let storage = self.storage.clone();
         linker.func_wrap(
             "platform",
             "get",
-            move |mut caller: wasmtime::Caller<'_, ()>, key_ptr: i32, key_len: i32| {
+            move |mut caller: wasmtime::Caller<'_, PlatformState>, key_ptr: i32, key_len: i32| {
                 tracing::info!(system = "platform", func = "get", "syscall");
                 let key = WasmString::from_caller(&mut caller, (key_ptr, key_len))?;
 
@@ -38,7 +39,7 @@ impl Binding<()> for Platform {
         linker.func_wrap(
             "platform",
             "set",
-            move |mut caller: wasmtime::Caller<'_, ()>,
+            move |mut caller: wasmtime::Caller<'_, PlatformState>,
                   key_ptr: i32,
                   key_len: i32,
                   value_ptr: i32,

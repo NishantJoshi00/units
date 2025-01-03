@@ -1,8 +1,5 @@
 use std::collections::HashMap;
 
-use wasi_common::sync::WasiCtxBuilder;
-use wasi_common::WasiCtx;
-
 mod driver;
 mod platform;
 
@@ -13,7 +10,6 @@ pub trait Binding<T> {
 pub struct State {
     pub resolver: super::resolver::Resolver,
     pub descriptors: HashMap<String, Descriptor>,
-    pub wasi: WasiCtx,
 }
 
 pub struct Descriptor {
@@ -26,7 +22,6 @@ impl State {
         Self {
             resolver,
             descriptors: HashMap::new(),
-            wasi: WasiCtxBuilder::new().build(),
         }
     }
 }

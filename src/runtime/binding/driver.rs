@@ -1,4 +1,6 @@
 use anyhow::ensure;
+use wasi_common::sync::WasiCtxBuilder;
+use wasi_common::WasiCtx;
 
 use crate::runtime::driver::DriverRuntime;
 use crate::runtime::platform::Platform;
@@ -44,7 +46,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
                 .ok_or_else(|| anyhow::anyhow!("Path not found"))?
                 .clone();
 
-            let mut lower_store = wasmtime::Store::new(&driver.engine, ());
+            let mut lower_store = wasmtime::Store::new(&driver.engine, PlatformState::default());
             let mut lower_linker = wasmtime::Linker::new(&driver.engine);
             platform.bind(&mut lower_linker)?;
 
@@ -109,7 +111,8 @@ impl Binding<State> for (DriverRuntime, Platform) {
                     let driver_name = value.driver_name.clone();
                     let account_info = value.account_info.clone();
 
-                    let mut lower_store = wasmtime::Store::new(&driver.engine, ());
+                    let mut lower_store =
+                        wasmtime::Store::new(&driver.engine, PlatformState::default());
                     let mut lower_linker = wasmtime::Linker::new(&driver.engine);
                     platform.bind(&mut lower_linker)?;
 
@@ -185,7 +188,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
 
             let driver_name = desc1.driver_name.clone();
 
-            let mut lower_store = wasmtime::Store::new(&driver.engine, ());
+            let mut lower_store = wasmtime::Store::new(&driver.engine, PlatformState::default());
             let mut lower_linker = wasmtime::Linker::new(&driver.engine);
             platform.bind(&mut lower_linker)?;
 
@@ -255,7 +258,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
             let driver_name = descriptor.driver_name.clone();
             let account_info = descriptor.account_info.clone();
 
-            let mut lower_store = wasmtime::Store::new(&driver.engine, ());
+            let mut lower_store = wasmtime::Store::new(&driver.engine, PlatformState::default());
             let mut lower_linker = wasmtime::Linker::new(&driver.engine);
             platform.bind(&mut lower_linker)?;
 
@@ -302,5 +305,23 @@ impl Binding<State> for (DriverRuntime, Platform) {
         linker.func_wrap("driver", "view", view)?;
 
         Ok(())
+    }
+}
+
+pub struct PlatformState {
+    pub wasi: WasiCtx,
+}
+
+impl PlatformState {
+    pub fn new() -> Self {
+        Self {
+            wasi: WasiCtxBuilder::new().build(),
+        }
+    }
+}
+
+impl Default for PlatformState {
+    fn default() -> Self {
+        Self::new()
     }
 }

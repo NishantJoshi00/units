@@ -25,10 +25,11 @@ impl server_traits::Execution for super::Runtime {
         request: Request<types::ExecutionRequest>,
     ) -> Result<Response<types::ExecutionResponse>, tonic::Status> {
         let request = request.into_inner();
-        let output =
-            execte(self.clone(), request).inspect_err(|err| {
+        let output = execte(self.clone(), request)
+            .inspect_err(|err| {
                 tracing::error!(error = ?err, "Execution failed");
-            }).map_err(|e| tonic::Status::internal(e.to_string()))?;
+            })
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
         Ok(Response::new(output))
     }
 }

@@ -48,8 +48,6 @@ impl Runtime {
 
         (self.driver_layer, self.platform_layer).bind(&mut linker)?;
 
-        wasi_common::sync::add_to_linker(&mut linker, |state| &mut state.wasi)?;
-
         let instance = linker.instantiate(&mut store, &module)?;
         let memory = instance
             .get_memory(&mut store, "memory")
