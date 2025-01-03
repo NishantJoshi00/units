@@ -1504,32 +1504,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "953ec861398dccce10c670dfeaf3ec4911ca479e9c02154b3a215178c5f566f2"
 
 [[package]]
-name = "pofi-sys"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "cargo_metadata",
- "nanoid",
- "prost",
- "redis",
- "serde",
- "serde_json",
- "tokio",
- "toml",
- "tonic",
- "tonic-build",
- "tonic-reflection",
- "tonic-types",
- "tonic-web",
- "tower-http 0.6.2",
- "tracing",
- "tracing-subscriber",
- "wasi-common",
- "wasmtime",
- "wat",
-]
-
-[[package]]
 name = "postcard"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2421,6 +2395,32 @@ name = "unicode-xid"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
+
+[[package]]
+name = "units"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cargo_metadata",
+ "nanoid",
+ "prost",
+ "redis",
+ "serde",
+ "serde_json",
+ "tokio",
+ "toml",
+ "tonic",
+ "tonic-build",
+ "tonic-reflection",
+ "tonic-types",
+ "tonic-web",
+ "tower-http 0.6.2",
+ "tracing",
+ "tracing-subscriber",
+ "wasi-common",
+ "wasmtime",
+ "wat",
+]
 
 [[package]]
 name = "url"

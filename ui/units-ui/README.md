@@ -1,26 +1,27 @@
-# Finternet App
+# Units POC - Next.js Frontend
 
-A Next.js application that enables secure onboarding and execution of WebAssembly modules through a gRPC interface.
+This is a proof-of-concept frontend application for the Units project, built with Next.js and TypeScript. It provides a user interface for managing token handlers, user onboarding, and program execution through gRPC-Web services.
 
 ## Features
 
-- Load and manage token handlers (WebAssembly/WAT modules)
-- User onboarding with account binding
-- Execute WebAssembly programs
-- Modern, responsive UI built with Tailwind CSS
-- Type-safe gRPC-web communication
+- Load and manage token handlers
+- User onboarding through token binding
+- Program execution interface
+- Real-time JSON response visualization
+- Modern UI components using shadcn/ui
+- gRPC-Web integration for backend communication
 
 ## Prerequisites
 
-- Node.js 18.17.0 or later
-- npm or yarn package manager
-- A running gRPC server that implements the Finternet protocol
+- Node.js >= 18.17.0
+- npm or yarn
+- Running backend gRPC server (expected at `localhost:8080`)
 
 ## Getting Started
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/my-finternet-app.git
+git clone <repository-url>
 cd my-finternet-app
 ```
 
@@ -28,62 +29,91 @@ cd my-finternet-app
 ```bash
 npm install
 # or
-yarn
+yarn install
 ```
 
-3. Start the development server:
+3. Run the development server:
 ```bash
 npm run dev
 # or
 yarn dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 ## Project Structure
 
 ```
 src/
-├── app/                 # Next.js app router
-├── components/          # React components
-│   ├── ui/             # UI components (buttons, inputs, etc.)
-│   └── ...             # Feature components
-├── lib/                # Utility functions and backend API
-└── proto/              # Protocol buffer definitions
+├── app/                    # Next.js app directory
+├── components/             # React components
+│   ├── ui/                # Reusable UI components
+│   ├── BindForm.tsx       # User onboarding form
+│   ├── ExecuteForm.tsx    # Program execution form
+│   └── LoadDriverForm.tsx # Token handler form
+├── lib/                   # Utility functions and backend services
+└── proto/                 # Generated gRPC-Web code
 ```
 
-## Key Technologies
+## Key Components
 
-- [Next.js](https://nextjs.org/) - React framework
-- [Tailwind CSS](https://tailwindcss.com/) - CSS framework
-- [shadcn/ui](https://ui.shadcn.com/) - UI component library
-- [gRPC-web](https://github.com/grpc/grpc-web) - gRPC for web clients
-- [Protocol Buffers](https://protobuf.dev/) - Data serialization format
-- [Radix UI](https://www.radix-ui.com/) - Primitive UI components
+### Token Handler Management
+- Upload and configure token handlers
+- Support for both WAT and WASM binary types
+- Version management
+
+### User Onboarding
+- Token binding interface
+- Account information configuration
+- Path management
+
+### Program Execution
+- Execute WebAssembly programs
+- Real-time feedback
+- JSON input/output handling
+
+## Technology Stack
+
+- **Framework**: Next.js 15.1
+- **Language**: TypeScript
+- **Styling**: TailwindCSS
+- **UI Components**: shadcn/ui
+- **Backend Communication**: gRPC-Web
+- **State Management**: React Hooks
+- **Form Handling**: Native React forms
+- **Icons**: Lucide React
+
+## API Integration
+
+The application integrates with three main gRPC services:
+- Driver Service: For token handler management
+- Bind Service: For user onboarding
+- Execution Service: For program execution
+
+All services communicate through gRPC-Web protocols with the backend server.
 
 ## Development
-
-### API Integration
-
-The application communicates with a gRPC server using the following services:
-
-- `Driver` - For managing token handlers
-- `Bind` - For user onboarding
-- `Execution` - For running WebAssembly programs
-
-The Protocol Buffer definitions can be found in `src/proto/finternet.proto`.
 
 ### Adding New Components
 
 1. Create new components in the `src/components` directory
-2. For UI components, use the `src/components/ui` directory
-3. Follow the existing component patterns and TypeScript types
+2. Use shadcn/ui components from `src/components/ui` for consistent styling
+3. Implement gRPC-Web service calls through `src/lib/backend.ts`
 
 ### Styling
 
-- Use Tailwind CSS classes for styling
-- Maintain the dark/light theme compatibility
-- Follow the color scheme defined in `tailwind.config.ts`
+- Uses TailwindCSS for styling
+- Custom theme configuration in `tailwind.config.ts`
+- Dark mode support through CSS variables
+- shadcn/ui component styling system
+
+### Backend Communication
+
+All backend service calls are centralized in `src/lib/backend.ts`. To add new service calls:
+
+1. Define new methods in the backend service file
+2. Use the appropriate gRPC-Web client
+3. Handle responses through the JSON prettifier component
 
 ## Building for Production
 
@@ -93,14 +123,11 @@ npm run build
 yarn build
 ```
 
-## Contributing
+The built application will be in the `.next` directory.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## Scripts
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+- `dev`: Run development server
+- `build`: Build for production
+- `start`: Start production server
+- `lint`: Run ESLint

@@ -22,7 +22,7 @@ Finternet implements a three-tier "burger" architecture:
 
 ## User Interface
 
-For detailed UI documentation and setup instructions, see [UI Documentation](ui/pofi-sys-ui/README.md).
+For detailed UI documentation and setup instructions, see [UI Documentation](ui/units-ui/README.md).
 
 The Finternet system includes a modern web interface built with Next.js and Tailwind CSS, providing:
 
