@@ -20,6 +20,36 @@ Finternet implements a three-tier "burger" architecture:
 - Comprehensive permission and context management
 - Support for custom asset types through driver system
 
+## User Interface
+
+For detailed UI documentation and setup instructions, see [UI Documentation](ui/pofi-sys-ui/README.md).
+
+The Finternet system includes a modern web interface built with Next.js and Tailwind CSS, providing:
+
+### Core Features
+- WebAssembly Module Management: Interface for loading and managing token handlers
+- Account Management: User onboarding and account binding workflows
+- Transaction Execution: Visual interface for executing WebAssembly programs
+- Real-time Status Updates: Live monitoring of transaction and system status
+
+### Technical Implementation
+- Built on Next.js App Router architecture
+- Responsive design using Tailwind CSS and shadcn/ui components
+- Type-safe gRPC-web communication with the backend
+- Dark/light theme support with consistent design system
+- Component hierarchy:
+  - UI primitives (buttons, inputs, dialogs)
+  - Feature components (module loader, transaction forms)
+  - Layout components (navigation, dashboard)
+
+### Integration Points
+- Connects to core services via gRPC:
+  - Driver Service: Token handler management
+  - Bind Service: User onboarding
+  - Execution Service: WebAssembly program execution
+- Real-time updates using server-sent events
+- Secure authentication and session management
+
 ## Prerequisites
 
 - Rust toolchain
