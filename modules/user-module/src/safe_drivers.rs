@@ -49,22 +49,22 @@ pub fn safe_main(input: &str) -> &str {
     "done"
 }
 
-pub fn safe_main(input: &str) -> &str {
-    let input: OnlyPath = serde_json::from_str(input).expect("invalid input");
-    let p1 = safe_intend(&input.path);
+// pub fn safe_main(input: &str) -> &str {
+//     let input: OnlyPath = serde_json::from_str(input).expect("invalid input");
+//     let p1 = safe_intend(&input.path);
 
-    let p1_data = safe_view(&p1);
+//     let p1_data = safe_view(&p1);
 
-    let p1_d = serde_json::from_str::<MoreData>(&p1_data).expect("invalid data");
+//     let p1_d = serde_json::from_str::<MoreData>(&p1_data).expect("invalid data");
 
-    let data = ViewData { path1: p1_d };
+//     let data = ViewData { path1: p1_d };
 
-    let data = serde_json::to_string(&data).expect("invalid data");
+//     let data = serde_json::to_string(&data).expect("invalid data");
 
-    safe_done(&p1);
+//     safe_done(&p1);
 
-    data.leak()
-}
+//     data.leak()
+// }
 
 #[derive(serde::Serialize)]
 struct ViewData {
