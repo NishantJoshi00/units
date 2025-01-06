@@ -48,3 +48,10 @@ impl<'a> Ptr for &'a str {
         s
     }
 }
+
+
+#[cfg(not(any(feature = "transfer", feature = "view")))]
+compile_error!("At least one of the features 'transfer' or 'view' must be enabled");
+
+#[cfg(all(feature = "transfer", feature = "view"))]
+compile_error!("Only one of the features 'transfer' or 'view' can be enabled");

@@ -14,7 +14,7 @@ popd || exit
 
 pushd user-module/ || exit
 
-make build
+make build-transfer
 
 bash exec.sh
 
