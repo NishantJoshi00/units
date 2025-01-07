@@ -1,6 +1,8 @@
 use tonic::{Request, Response};
 
 use crate::service::proto_types::BinaryType;
+use crate::service::proto_types::DriverDetail; // Use this if you need the proto version.
+
 
 use super::Runtime;
 
@@ -136,7 +138,7 @@ impl server_traits::Driver for super::Runtime {
         tracing::info!(name = ?module.name(), "Module Created");
 
         self.driver_layer
-            .add_driver(request.driver_name.clone(), module)
+            .add_driver(request.driver_name.clone(), module,request.driver_version.clone())
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         Ok(tonic::Response::new(types::LoadDriverResponse {
@@ -170,13 +172,19 @@ impl server_traits::DriverDetails for super::Runtime{
         _request: Request<types::DriverDetailsRequest>,
     )-> Result<Response<types::DriverDetailsResponse>, tonic::Status> {
 
-        let reader = &self.driver_layer;
-        let mut all_driver_details = Vec::<String>::new();
-        let result=&reader.drivers;
-        let locked_map = result.read().map_err(|_| tonic::Status::internal("Failed to lock map"))?;
-        for (key, _value) in locked_map.iter() {
-            all_driver_details.push(key.clone());
+        
+        let mut all_driver_details = Vec::<DriverDetail>::new();
+        let reader=&self.driver_layer.drivers;
+        let locked_map = reader.read().map_err(|_| tonic::Status::internal("Failed to lock map"))?;
+        for (key, driver_info) in locked_map.iter() {
+                let version=driver_info.version.clone();
+                let new_driver=DriverDetail{
+                    name:key.clone(),
+                    version,
+                };
+            all_driver_details.push(new_driver);
         }
+
 
         Ok(tonic::Response::new(types::DriverDetailsResponse{
             success:true,

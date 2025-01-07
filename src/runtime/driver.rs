@@ -10,10 +10,17 @@ use super::{resolver, types};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
+#[derive(Debug, Clone)]
+pub struct DriverInfo {
+    pub version: String,
+    pub module:wasmtime::Module,
+  
+}
+
 #[derive(Clone)]
 pub struct DriverRuntime {
     pub engine: wasmtime::Engine,
-    pub drivers: Arc<RwLock<HashMap<String, wasmtime::Module>>>,
+    pub drivers: Arc<RwLock<HashMap<String, DriverInfo>>>,
     pub resolver: resolver::Resolver,
     pub config: super::types::DriverConfig,
 }
@@ -32,11 +39,15 @@ impl DriverRuntime {
         })
     }
 
-    pub fn add_driver(&self, name: String, module: wasmtime::Module) -> anyhow::Result<()> {
+    pub fn add_driver(&self, name: String, module: wasmtime::Module,version:String) -> anyhow::Result<()> {
+          let driver_info=DriverInfo{
+            version,
+            module,
+          };
         self.drivers
             .write()
             .map_err(|e| anyhow::anyhow!("Poisoned Lock {:?}", e))?
-            .insert(name, module);
+            .insert(name, driver_info);
 
         Ok(())
     }

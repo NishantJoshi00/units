@@ -49,16 +49,18 @@ impl Binding<State> for (DriverRuntime, Platform) {
             let mut lower_store = wasmtime::Store::new(&driver.engine, PlatformState::default());
             let mut lower_linker = wasmtime::Linker::new(&driver.engine);
             platform.bind(&mut lower_linker)?;
-
-            let driver_module = driver
+        
+            let driver_info = driver
                 .drivers
                 .read()
                 .map_err(|_| anyhow::anyhow!("lock failed"))?;
-            let driver_module = driver_module
+            let driver_info = driver_info
                 .get(&driver_name)
                 .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
+            
+            
 
-            let lower_instance = lower_linker.instantiate(&mut lower_store, driver_module)?;
+            let lower_instance = lower_linker.instantiate(&mut lower_store, &driver_info.module)?;
             let lower_memory = lower_instance
                 .get_memory(&mut lower_store, "memory")
                 .ok_or_else(|| anyhow::anyhow!("No memory"))?;
@@ -116,17 +118,16 @@ impl Binding<State> for (DriverRuntime, Platform) {
                     let mut lower_linker = wasmtime::Linker::new(&driver.engine);
                     platform.bind(&mut lower_linker)?;
 
-                    let driver_module = driver
-                        .drivers
-                        .read()
-                        .map_err(|_| anyhow::anyhow!("lock failed"))?;
-
-                    let driver_module = driver_module
-                        .get(&driver_name)
-                        .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
+                    let driver_info = driver
+                    .drivers
+                    .read()
+                    .map_err(|_| anyhow::anyhow!("lock failed"))?;
+                    let driver_info = driver_info
+                    .get(&driver_name)
+                    .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
 
                     let lower_instance =
-                        lower_linker.instantiate(&mut lower_store, driver_module)?;
+                        lower_linker.instantiate(&mut lower_store, &driver_info.module)?;
 
                     let lower_memory = lower_instance
                         .get_memory(&mut lower_store, "memory")
@@ -192,16 +193,15 @@ impl Binding<State> for (DriverRuntime, Platform) {
             let mut lower_linker = wasmtime::Linker::new(&driver.engine);
             platform.bind(&mut lower_linker)?;
 
-            let driver_module = driver
-                .drivers
-                .read()
-                .map_err(|_| anyhow::anyhow!("lock failed"))?;
+            let driver_info = driver
+            .drivers
+            .read()
+            .map_err(|_| anyhow::anyhow!("lock failed"))?;
+            let driver_info = driver_info
+            .get(&driver_name)
+            .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
 
-            let driver_module = driver_module
-                .get(&driver_name)
-                .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
-
-            let lower_instance = lower_linker.instantiate(&mut lower_store, driver_module)?;
+            let lower_instance = lower_linker.instantiate(&mut lower_store, &driver_info.module)?;
 
             let lower_memory = lower_instance
                 .get_memory(&mut lower_store, "memory")
@@ -262,16 +262,15 @@ impl Binding<State> for (DriverRuntime, Platform) {
             let mut lower_linker = wasmtime::Linker::new(&driver.engine);
             platform.bind(&mut lower_linker)?;
 
-            let driver_module = driver
-                .drivers
-                .read()
-                .map_err(|_| anyhow::anyhow!("lock failed"))?;
+            let driver_info = driver
+            .drivers
+            .read()
+            .map_err(|_| anyhow::anyhow!("lock failed"))?;
+            let driver_info = driver_info
+            .get(&driver_name)
+            .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
 
-            let driver_module = driver_module
-                .get(&driver_name)
-                .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
-
-            let lower_instance = lower_linker.instantiate(&mut lower_store, driver_module)?;
+            let lower_instance = lower_linker.instantiate(&mut lower_store, &driver_info.module)?;
 
             let lower_memory = lower_instance
                 .get_memory(&mut lower_store, "memory")
