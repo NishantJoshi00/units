@@ -96,29 +96,10 @@ jobs:
       - name: Build example modules
         run: |
           find modules -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
-            if [ -f "$dir/Cargo.toml" ]; then
+            if [ -f "$dir/Makefile" ]; then
               echo "Building $dir..."
               cd "$dir"
-              
-              # Get all features from Cargo.toml
-              if [ -f "Cargo.toml" ]; then
-                FEATURES=$(cargo metadata --no-deps --format-version 1 | \
-                  jq -r '.packages[0].features | keys[]' 2>/dev/null || echo "")
-              else
-                FEATURES=""
-              fi
-              
-              # If no features, build default
-              if [ -z "$FEATURES" ]; then
-                RUSTFLAGS="-C target-feature=+multivalue" cargo build --target wasm32-unknown-unknown --release
-              else
-                # Build each feature
-                for feature in $FEATURES; do
-                  echo "Building with feature: $feature"
-                  RUSTFLAGS="-C target-feature=+multivalue" cargo build --target wasm32-unknown-unknown --release --features "$feature"
-                done
-              fi
-              
+              make ci
               cd - > /dev/null
             fi
           done
