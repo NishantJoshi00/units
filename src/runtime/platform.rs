@@ -21,6 +21,7 @@ pub struct Platform {
     pub config: types::PlatformConfig,
 }
 
+#[derive(Debug)]
 #[derive(Clone)]
 pub struct Storage {
     #[cfg(feature = "redis")]

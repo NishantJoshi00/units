@@ -70,7 +70,10 @@ impl Server {
         let bind_service =
             super::service::proto_types::bind_server::BindServer::new(self.runtime.clone());
         let driver_service =
-            super::service::proto_types::driver_server::DriverServer::new(self.runtime);
+            super::service::proto_types::driver_server::DriverServer::new(self.runtime.clone());
+
+        let driver_details_service=
+            super::service::proto_types::driver_details_server::DriverDetailsServer::new(self.runtime);
 
         tonic::transport::Server::builder()
             .accept_http1(true)
@@ -81,6 +84,7 @@ impl Server {
             .add_service(execution_service)
             .add_service(bind_service)
             .add_service(driver_service)
+            .add_service(driver_details_service)
             .serve_with_shutdown(socket_addr, shut_down_signal)
             .await
             .map_err(Into::into)

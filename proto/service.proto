@@ -70,3 +70,15 @@ message ExecutionRequest {
   bytes binary = 4;
 }
 message ExecutionResponse { string output = 1; }
+
+service DriverDetails{
+  rpc SendDetails(DriverDetailsRequest) returns (DriverDetailsResponse);
+}
+
+message DriverDetailsRequest{
+}
+
+message DriverDetailsResponse{
+    bool success=1;
+    repeated string driver_data = 2;
+}

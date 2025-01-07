@@ -7,6 +7,7 @@ use super::Runtime;
 mod server_traits {
     pub use crate::service::proto_types::{
         bind_server::Bind, driver_server::Driver, execution_server::Execution,
+        driver_details_server::DriverDetails// for driver details
     };
 }
 
@@ -16,6 +17,7 @@ mod types {
     pub use crate::service::proto_types::{LoadDriverRequest, LoadDriverResponse};
     pub use crate::service::proto_types::{UnbindRequest, UnbindResponse};
     pub use crate::service::proto_types::{UnloadDriverRequest, UnloadDriverResponse};
+    pub use crate::service::proto_types::{DriverDetailsRequest,DriverDetailsResponse};//for sending all driver details
 }
 
 #[tonic::async_trait]
@@ -158,3 +160,28 @@ impl server_traits::Driver for super::Runtime {
         }))
     }
 }
+
+
+
+#[tonic::async_trait]
+impl server_traits::DriverDetails for super::Runtime{
+    async fn send_details(
+        &self,
+        _request: Request<types::DriverDetailsRequest>,
+    )-> Result<Response<types::DriverDetailsResponse>, tonic::Status> {
+
+        let reader = &self.driver_layer;
+        let mut all_driver_details = Vec::<String>::new();
+        let result=&reader.drivers;
+        let locked_map = result.read().map_err(|_| tonic::Status::internal("Failed to lock map"))?;
+        for (key, _value) in locked_map.iter() {
+            all_driver_details.push(key.clone());
+        }
+
+        Ok(tonic::Response::new(types::DriverDetailsResponse{
+            success:true,
+            driver_data:all_driver_details,
+        }))
+    }
+}
+
