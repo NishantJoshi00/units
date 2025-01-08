@@ -1,26 +1,28 @@
 use tonic::{Request, Response};
 
+use crate::runtime::driver::DriverInfo;
 use crate::service::proto_types::BinaryType;
 use crate::service::proto_types::DriverDetail;
-use crate::runtime::driver::DriverInfo;
-
 
 use super::Runtime;
 
 mod server_traits {
     pub use crate::service::proto_types::{
-        bind_server::Bind, driver_server::Driver, execution_server::Execution,
-        driver_details_server::DriverDetails// for driver details
+        bind_server::Bind,
+        driver_details_server::DriverDetails, // for driver details
+        driver_server::Driver,
+        execution_server::Execution,
     };
 }
 
 mod types {
     pub use crate::service::proto_types::{BindRequest, BindResponse};
+    pub use crate::service::proto_types::{DriverDetailsRequest, DriverDetailsResponse};
     pub use crate::service::proto_types::{ExecutionRequest, ExecutionResponse};
     pub use crate::service::proto_types::{LoadDriverRequest, LoadDriverResponse};
     pub use crate::service::proto_types::{UnbindRequest, UnbindResponse};
     pub use crate::service::proto_types::{UnloadDriverRequest, UnloadDriverResponse};
-    pub use crate::service::proto_types::{DriverDetailsRequest,DriverDetailsResponse};//for sending all driver details
+    //for sending all driver details
 }
 
 #[tonic::async_trait]
@@ -74,9 +76,9 @@ impl server_traits::Bind for super::Runtime {
             .read()
             .map_err(|_| tonic::Status::internal("Failed to lock drivers".to_string()))?;
 
-        let driver_info=DriverInfo{
-            name:request.driver_name.clone(),
-            version:request.driver_version.clone()
+        let driver_info = DriverInfo {
+            name: request.driver_name.clone(),
+            version: request.driver_version.clone(),
         };
 
         if !reader.contains_key(&driver_info) {
@@ -86,7 +88,11 @@ impl server_traits::Bind for super::Runtime {
 
         writer.insert(
             request.path.clone(),
-            (request.driver_name.clone(),request.driver_version.clone(),request.account_info.clone()),
+            (
+                request.driver_name.clone(),
+                request.driver_version.clone(),
+                request.account_info.clone(),
+            ),
         );
 
         tracing::info!(path = %request.path, driver = %request.driver_name,verion=%request.driver_version ,account_info = %request.account_info, "Path bound");
@@ -117,11 +123,13 @@ impl server_traits::Bind for super::Runtime {
 
         match output {
             None => Err(tonic::Status::not_found("Path not found")),
-            Some((driver_name,driver_version,account_info)) => Ok(Response::new(types::UnbindResponse {
-                driver_name,
-                driver_version,
-                account_info,
-            })),
+            Some((driver_name, driver_version, account_info)) => {
+                Ok(Response::new(types::UnbindResponse {
+                    driver_name,
+                    driver_version,
+                    account_info,
+                }))
+            }
         }
     }
 }
@@ -146,7 +154,11 @@ impl server_traits::Driver for super::Runtime {
         tracing::info!(name = ?module.name(), "Module Created");
 
         self.driver_layer
-            .add_driver(request.driver_name.clone(), module,request.driver_version.clone())
+            .add_driver(
+                request.driver_name.clone(),
+                module,
+                request.driver_version.clone(),
+            )
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         Ok(tonic::Response::new(types::LoadDriverResponse {
@@ -161,9 +173,9 @@ impl server_traits::Driver for super::Runtime {
     ) -> Result<Response<types::UnloadDriverResponse>, tonic::Status> {
         let request = request.into_inner();
 
-        let driver_info=DriverInfo{
+        let driver_info = DriverInfo {
             name: request.driver_name.clone(),
-            version: request.driver_version.clone()
+            version: request.driver_version.clone(),
         };
 
         self.driver_layer
@@ -172,42 +184,38 @@ impl server_traits::Driver for super::Runtime {
 
         Ok(tonic::Response::new(types::UnloadDriverResponse {
             driver_name: request.driver_name,
-            driver_version: request.driver_version
+            driver_version: request.driver_version,
         }))
     }
 }
 
-
-
 #[tonic::async_trait]
-impl server_traits::DriverDetails for super::Runtime{
+impl server_traits::DriverDetails for super::Runtime {
     async fn send_details(
         &self,
         _request: Request<types::DriverDetailsRequest>,
-    )-> Result<Response<types::DriverDetailsResponse>, tonic::Status> {
-
-        
+    ) -> Result<Response<types::DriverDetailsResponse>, tonic::Status> {
         let mut all_driver_details = Vec::<DriverDetail>::new();
         let mut message = String::from("Drivers Detail list found!!");
-        let reader=&self.driver_layer.drivers;
-        let locked_map = reader.read().map_err(|_| tonic::Status::internal("Failed to lock map"))?;
+        let reader = &self.driver_layer.drivers;
+        let locked_map = reader
+            .read()
+            .map_err(|_| tonic::Status::internal("Failed to lock map"))?;
         for (driver_info, _module) in locked_map.iter() {
-                let new_driver=DriverDetail{
-                    name: driver_info.name.clone(),
-                    version: driver_info.version.clone(),
-                };
+            let new_driver = DriverDetail {
+                name: driver_info.name.clone(),
+                version: driver_info.version.clone(),
+            };
             all_driver_details.push(new_driver);
         }
 
-        if all_driver_details.len()==0 {
+        if all_driver_details.len() == 0 {
             message = String::from("Driver Details not found!!")
         }
 
-
-        Ok(tonic::Response::new(types::DriverDetailsResponse{
+        Ok(tonic::Response::new(types::DriverDetailsResponse {
             message,
-            driver_data:all_driver_details,
+            driver_data: all_driver_details,
         }))
     }
 }
-

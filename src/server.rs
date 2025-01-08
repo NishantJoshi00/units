@@ -72,8 +72,10 @@ impl Server {
         let driver_service =
             super::service::proto_types::driver_server::DriverServer::new(self.runtime.clone());
 
-        let driver_details_service=
-            super::service::proto_types::driver_details_server::DriverDetailsServer::new(self.runtime);
+        let driver_details_service =
+            super::service::proto_types::driver_details_server::DriverDetailsServer::new(
+                self.runtime,
+            );
 
         tonic::transport::Server::builder()
             .accept_http1(true)
