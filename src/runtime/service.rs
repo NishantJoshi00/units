@@ -1,7 +1,7 @@
 use tonic::{Request, Response};
 
 use crate::service::proto_types::BinaryType;
-use crate::service::proto_types::DriverDetail; // Use this if you need the proto version.
+use crate::service::proto_types::DriverDetail;
 
 
 use super::Runtime;

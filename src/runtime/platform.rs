@@ -21,8 +21,8 @@ pub struct Platform {
     pub config: types::PlatformConfig,
 }
 
-#[derive(Debug)]
-#[derive(Clone)]
+
+#[derive(Clone,Debug)]
 pub struct Storage {
     #[cfg(feature = "redis")]
     pub redis: Arc<Mutex<redis::Client>>,
