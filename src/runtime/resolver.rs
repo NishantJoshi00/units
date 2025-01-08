@@ -1,9 +1,15 @@
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
+#[derive(Clone)]
+pub struct PathInfo{
+    pub driver_name: String,
+    pub driver_version: String,
+    pub account_info: String
+}
 
 #[derive(Clone)]
 pub struct Resolver {
-    pub mount_points: Arc<RwLock<HashMap<String, (String, String, String)>>>, // path -> (driver_name,driver_version
+    pub mount_points: Arc<RwLock<HashMap<String, PathInfo>>>, // path -> (driver_name,driver_version
                                                                               // account_info)
 }
 

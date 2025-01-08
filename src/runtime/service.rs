@@ -3,6 +3,7 @@ use tonic::{Request, Response};
 use crate::runtime::driver::DriverInfo;
 use crate::service::proto_types::BinaryType;
 use crate::service::proto_types::DriverDetail;
+use crate::runtime::resolver::PathInfo;
 
 use super::Runtime;
 
@@ -86,13 +87,15 @@ impl server_traits::Bind for super::Runtime {
             return Err(tonic::Status::not_found("Driver not found"));
         }
 
+        let path_info=PathInfo{
+            driver_name: request.driver_name.clone(),
+            driver_version: request.driver_version.clone(),
+            account_info: request.account_info.clone(),
+        };
+
         writer.insert(
             request.path.clone(),
-            (
-                request.driver_name.clone(),
-                request.driver_version.clone(),
-                request.account_info.clone(),
-            ),
+            path_info,
         );
 
         tracing::info!(path = %request.path, driver = %request.driver_name,verion=%request.driver_version ,account_info = %request.account_info, "Path bound");
@@ -123,11 +126,11 @@ impl server_traits::Bind for super::Runtime {
 
         match output {
             None => Err(tonic::Status::not_found("Path not found")),
-            Some((driver_name, driver_version, account_info)) => {
+            Some(path_info) => {
                 Ok(Response::new(types::UnbindResponse {
-                    driver_name,
-                    driver_version,
-                    account_info,
+                    driver_name: path_info.driver_name,
+                    driver_version: path_info.driver_version,
+                    account_info: path_info.account_info,
                 }))
             }
         }
@@ -209,7 +212,7 @@ impl server_traits::DriverDetails for super::Runtime {
             all_driver_details.push(new_driver);
         }
 
-        if all_driver_details.len() == 0 {
+        if all_driver_details.is_empty(){
             message = String::from("Driver Details not found!!")
         }
 
