@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -17,12 +17,7 @@ import {
 
 
 import { JsonPrettifier } from "./JsonPrettify";
-
-const driverMap = {
-  MONO: 'mono',
-  BETA: 'beta'
-}
-
+import { getDriverList } from "@/utils/grpcClient";
 
 export default function BindForm() {
   const [driverName, setDriverName] = useState("");
@@ -30,6 +25,7 @@ export default function BindForm() {
   const [accountInfo, setAccountInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
+  const [driverList, setDriverList] = useState([])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +53,34 @@ export default function BindForm() {
     setDriverName(driverName)
   }
 
-  const drivers = Object.keys(driverMap)
+  const fetchDrivers = async () => {
+    try {
+      const res = await getDriverList()
+      console.log(res)
+    } catch (error) {
+      console.log(error)
+    }
+    const mockRes = {
+      "success": true,
+      "driverData": [
+        {
+          "name": "mono",
+          "version": "0.1.0"
+        },
+        {
+          "name": "beta",
+          "version": "0.1.0"
+        }
+      ]
+    }
+
+    const driverList = mockRes.driverData.map(driverObj => driverObj.name)
+    setDriverList(driverList)
+  }
+
+  useEffect(() => {
+    fetchDrivers()
+  }, [])
 
   return (
     <Card>
@@ -84,14 +107,13 @@ export default function BindForm() {
                   <Button className="text-left justify-start" variant="outline">{driverName || 'Select Handler'}</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">
-                  {Array.isArray(drivers) && drivers.map((driverKey: string) => {
-                    const currDriverName: string = driverMap[driverKey]
+                  {Array.isArray(driverList) && driverList.map((driver: string) => {
                     return (
                       <DropdownMenuCheckboxItem
-                        checked={driverName === currDriverName}
-                        onCheckedChange={driverSelectHandler(currDriverName)}
+                        checked={driverName === driver}
+                        onCheckedChange={driverSelectHandler(driver)}
                       >
-                        {currDriverName}
+                        {driver}
                       </DropdownMenuCheckboxItem>
                     )
                   })}
