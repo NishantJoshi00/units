@@ -5,6 +5,7 @@ use wasi_common::WasiCtx;
 use crate::runtime::driver::DriverRuntime;
 use crate::runtime::platform::Platform;
 use crate::types::WasmString;
+use crate::runtime::driver::DriverInfo;
 
 use super::{Binding, Descriptor, State};
 
@@ -36,7 +37,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
             let path_name = WasmString::from_caller(&mut caller, (path_ptr, path_len))?;
             tracing::info!(system = "driver", func = "intend", "syscall");
 
-            let (driver_name, account_info) = caller
+            let (driver_name,driver_version ,account_info) = caller
                 .data()
                 .resolver
                 .mount_points
@@ -50,17 +51,21 @@ impl Binding<State> for (DriverRuntime, Platform) {
             let mut lower_linker = wasmtime::Linker::new(&driver.engine);
             platform.bind(&mut lower_linker)?;
         
-            let driver_info = driver
+            let driver_list = driver
                 .drivers
                 .read()
                 .map_err(|_| anyhow::anyhow!("lock failed"))?;
-            let driver_info = driver_info
-                .get(&driver_name)
+
+            let driver_info=DriverInfo{
+                name: driver_name.clone(),
+                version: driver_version.clone(),
+            };
+
+            let driver_module = driver_list
+                .get(&driver_info)
                 .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
             
-            
-
-            let lower_instance = lower_linker.instantiate(&mut lower_store, &driver_info.module)?;
+            let lower_instance = lower_linker.instantiate(&mut lower_store, driver_module)?;
             let lower_memory = lower_instance
                 .get_memory(&mut lower_store, "memory")
                 .ok_or_else(|| anyhow::anyhow!("No memory"))?;
@@ -78,7 +83,8 @@ impl Binding<State> for (DriverRuntime, Platform) {
             caller.data_mut().descriptors.insert(
                 key.clone(),
                 Descriptor {
-                    driver_name,
+                    driver_name: driver_name.clone(),
+                    driver_version: driver_version.clone(),
                     account_info: serde_json::from_str(output.into_str())?,
                 },
             );
@@ -111,6 +117,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
                     // get the driver, and execute the done function
 
                     let driver_name = value.driver_name.clone();
+                    let driver_version= value.driver_version.clone();
                     let account_info = value.account_info.clone();
 
                     let mut lower_store =
@@ -118,16 +125,22 @@ impl Binding<State> for (DriverRuntime, Platform) {
                     let mut lower_linker = wasmtime::Linker::new(&driver.engine);
                     platform.bind(&mut lower_linker)?;
 
-                    let driver_info = driver
-                    .drivers
-                    .read()
-                    .map_err(|_| anyhow::anyhow!("lock failed"))?;
-                    let driver_info = driver_info
-                    .get(&driver_name)
-                    .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
+                    let driver_list = driver
+                        .drivers
+                        .read()
+                        .map_err(|_| anyhow::anyhow!("lock failed"))?;
+
+                    let driver_info=DriverInfo{
+                        name:driver_name,
+                        version:driver_version,
+                    };
+                    
+                    let driver_module = driver_list
+                        .get(&driver_info)
+                        .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
 
                     let lower_instance =
-                        lower_linker.instantiate(&mut lower_store, &driver_info.module)?;
+                        lower_linker.instantiate(&mut lower_store, driver_module)?;
 
                     let lower_memory = lower_instance
                         .get_memory(&mut lower_store, "memory")
@@ -184,24 +197,31 @@ impl Binding<State> for (DriverRuntime, Platform) {
                 None => anyhow::bail!("Descriptor not found"),
             };
 
-            ensure!(desc1.driver_name == desc2.driver_name, "driver mismatch");
+            ensure!(desc1.driver_name == desc2.driver_name && desc1.driver_version == desc2.driver_version, "driver mismatch");
             tracing::info!(from_driver = %desc1.driver_name, to_driver = %desc2.driver_name, "transfer");
 
             let driver_name = desc1.driver_name.clone();
+            let driver_version= desc1.driver_version.clone();
 
             let mut lower_store = wasmtime::Store::new(&driver.engine, PlatformState::default());
             let mut lower_linker = wasmtime::Linker::new(&driver.engine);
             platform.bind(&mut lower_linker)?;
 
-            let driver_info = driver
-            .drivers
-            .read()
-            .map_err(|_| anyhow::anyhow!("lock failed"))?;
-            let driver_info = driver_info
-            .get(&driver_name)
-            .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
+            let driver_list = driver
+                .drivers
+                .read()
+                .map_err(|_| anyhow::anyhow!("lock failed"))?;
 
-            let lower_instance = lower_linker.instantiate(&mut lower_store, &driver_info.module)?;
+            let driver_info=DriverInfo{
+                name: driver_name,
+                version: driver_version,
+            };
+            
+            let driver_module = driver_list
+                .get(&driver_info)
+                .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
+
+            let lower_instance = lower_linker.instantiate(&mut lower_store, driver_module)?;
 
             let lower_memory = lower_instance
                 .get_memory(&mut lower_store, "memory")
@@ -256,21 +276,28 @@ impl Binding<State> for (DriverRuntime, Platform) {
                 .ok_or_else(|| anyhow::anyhow!("Descriptor not found"))?;
 
             let driver_name = descriptor.driver_name.clone();
+            let driver_version=descriptor.driver_version.clone();
             let account_info = descriptor.account_info.clone();
 
             let mut lower_store = wasmtime::Store::new(&driver.engine, PlatformState::default());
             let mut lower_linker = wasmtime::Linker::new(&driver.engine);
             platform.bind(&mut lower_linker)?;
 
-            let driver_info = driver
-            .drivers
-            .read()
-            .map_err(|_| anyhow::anyhow!("lock failed"))?;
-            let driver_info = driver_info
-            .get(&driver_name)
-            .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
+            let driver_list = driver
+                .drivers
+                .read()
+                .map_err(|_| anyhow::anyhow!("lock failed"))?;
 
-            let lower_instance = lower_linker.instantiate(&mut lower_store, &driver_info.module)?;
+            let driver_info=DriverInfo{
+                name:driver_name,
+                version:driver_version,
+            };
+            
+            let driver_module = driver_list
+                .get(&driver_info)
+                .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
+
+            let lower_instance = lower_linker.instantiate(&mut lower_store, driver_module)?;
 
             let lower_memory = lower_instance
                 .get_memory(&mut lower_store, "memory")
