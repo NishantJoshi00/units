@@ -8,7 +8,21 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { bind } from "@/lib/backend";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
+
+
 import { JsonPrettifier } from "./JsonPrettify";
+
+const driverMap = {
+  MONO: 'mono',
+  BETA: 'beta'
+}
+
 
 export default function BindForm() {
   const [driverName, setDriverName] = useState("");
@@ -39,6 +53,12 @@ export default function BindForm() {
     setAccountInfo("");
   };
 
+  const driverSelectHandler = (driverName: string) => () => {
+    setDriverName(driverName)
+  }
+
+  const drivers = Object.keys(driverMap)
+
   return (
     <Card>
       <CardHeader>
@@ -58,12 +78,25 @@ export default function BindForm() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="driverName">Token Handler Name</Label>
-              <Input
-                id="driverName"
-                value={driverName}
-                onChange={(e) => setDriverName(e.target.value)}
-                required
-              />
+              <br />
+              <DropdownMenu>
+                <DropdownMenuTrigger className="w-full" asChild>
+                  <Button className="text-left justify-start" variant="outline">{driverName || 'Select Handler'}</Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  {Array.isArray(drivers) && drivers.map((driverKey: string) => {
+                    const currDriverName: string = driverMap[driverKey]
+                    return (
+                      <DropdownMenuCheckboxItem
+                        checked={driverName === currDriverName}
+                        onCheckedChange={driverSelectHandler(currDriverName)}
+                      >
+                        {currDriverName}
+                      </DropdownMenuCheckboxItem>
+                    )
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div>
               <Label htmlFor="path">Token Path</Label>
