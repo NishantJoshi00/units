@@ -3,13 +3,13 @@ use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
-struct TransferRequest {
-    key: String,
-    value: String,
+pub struct TransferRequest {
+    pub key: String,
+    pub value: String,
 }
 
 #[derive(Deserialize, Debug)]
-struct TransferResponse {
+pub struct TransferResponse {
     signature: String,
 }
 

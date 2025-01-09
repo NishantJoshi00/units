@@ -23,6 +23,7 @@ pub struct Platform {
 
 #[derive(Clone)]
 pub struct Storage {
+    #[cfg(feature = "redis")]
     pub redis: Arc<Mutex<redis::Client>>,
     pub kev: Arc<RwLock<HashMap<String, String>>>,
 }
@@ -32,6 +33,7 @@ impl Platform {
         tracing::debug!("Initializing platform");
         Ok(Self {
             storage: Storage {
+                #[cfg(feature = "redis")]
                 redis: Arc::new(Mutex::new(redis::Client::open("redis://127.0.0.1/")?)),
                 kev: Arc::new(RwLock::new(HashMap::new())),
             },
@@ -42,7 +44,17 @@ impl Platform {
 
 impl Storage {
     pub fn get(&self, key: &str) -> anyhow::Result<Option<String>> {
-        get
+        match key {
+            key if key.starts_with("sol:") => self.get_sol(key),
+            key => self.get_redis(key),
+        }
+    }
+
+    pub fn get_sol(&self, key: &str) -> anyhow::Result<Option<String>> {
+        self.kev
+            .read()
+            .map(|x| x.get(key).cloned())
+            .map_err(|e| anyhow::anyhow!("Error reading storage: {:?}", e))
     }
 
     pub fn get_redis(&self, key: &str) -> anyhow::Result<Option<String>> {
@@ -51,7 +63,7 @@ impl Storage {
             .lock()
             .map_err(|e| anyhow::anyhow!("Error getting redis client: {:?}", e))?;
         let mut con = client.get_connection()?;
-        redis::cmd("GET").arg(key).query::<Option<String>>(&mut con);
+        let _ = redis::cmd("GET").arg(key).query::<Option<String>>(&mut con);
 
         self.kev
             .read()
@@ -83,7 +95,6 @@ impl Storage {
     }
 
     pub fn set_sol(&self, key: &str, value: &str) -> anyhow::Result<()> {
-
         tracing::info!(?key, ?value, "submitting proof");
         let output = integration::solana::transfer_token(key.to_string(), value.to_string());
         tracing::info!(signature = ?output, "triggering solana transfer");
@@ -97,12 +108,15 @@ impl Storage {
     }
 
     pub fn delete(&self, key: &str) -> anyhow::Result<()> {
-        let client = self
-            .redis
-            .lock()
-            .map_err(|e| anyhow::anyhow!("Error getting redis client: {:?}", e))?;
-        let mut con = client.get_connection()?;
-        redis::cmd("DEL").arg(key).exec(&mut con)?;
+        #[cfg(feature = "redis")]
+        {
+            let client = self
+                .redis
+                .lock()
+                .map_err(|e| anyhow::anyhow!("Error getting redis client: {:?}", e))?;
+            let mut con = client.get_connection()?;
+            redis::cmd("DEL").arg(key).exec(&mut con)?;
+        }
 
         self.kev
             .write()

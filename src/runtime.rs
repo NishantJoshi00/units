@@ -14,12 +14,12 @@ use self::binding::Binding;
 
 pub mod binding;
 pub mod driver;
+pub mod integration;
 pub mod platform;
 pub mod process;
 pub mod resolver;
 mod service;
 pub mod types;
-pub mod integration;
 
 #[derive(Clone)]
 pub struct Runtime {
