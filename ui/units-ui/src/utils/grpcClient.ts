@@ -3,7 +3,7 @@ import {DriverDetailsRequest} from '../service_pb';
 
 
 // const API_DOMAIN = 'http://localhost:8080'
-const API_DOMAIN = 'http://l127.0.0.1:8080'
+const API_DOMAIN = 'http://127.0.0.1:8080'
 
 function createDriverDetailClient() {
     return new DriverDetailsClient(API_DOMAIN, null, null)
@@ -18,7 +18,7 @@ export const getDriverList = () => {
                 reject(err);
                 return
             }
-            resolve(response.getMessage())
+            resolve(response.toObject())
         })
     })
 }

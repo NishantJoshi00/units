@@ -744,7 +744,8 @@ proto.finternet.UnloadDriverRequest.prototype.toObject = function(opt_includeIns
  */
 proto.finternet.UnloadDriverRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-driverName: jspb.Message.getFieldWithDefault(msg, 1, "")
+driverName: jspb.Message.getFieldWithDefault(msg, 1, ""),
+driverVersion: jspb.Message.getFieldWithDefault(msg, 2, "")
   };
 
   if (includeInstance) {
@@ -785,6 +786,10 @@ proto.finternet.UnloadDriverRequest.deserializeBinaryFromReader = function(msg, 
       var value = /** @type {string} */ (reader.readString());
       msg.setDriverName(value);
       break;
+    case 2:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setDriverVersion(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -821,6 +826,13 @@ proto.finternet.UnloadDriverRequest.serializeBinaryToWriter = function(message, 
       f
     );
   }
+  f = message.getDriverVersion();
+  if (f.length > 0) {
+    writer.writeString(
+      2,
+      f
+    );
+  }
 };
 
 
@@ -839,6 +851,24 @@ proto.finternet.UnloadDriverRequest.prototype.getDriverName = function() {
  */
 proto.finternet.UnloadDriverRequest.prototype.setDriverName = function(value) {
   return jspb.Message.setProto3StringField(this, 1, value);
+};
+
+
+/**
+ * optional string driver_version = 2;
+ * @return {string}
+ */
+proto.finternet.UnloadDriverRequest.prototype.getDriverVersion = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.finternet.UnloadDriverRequest} returns this
+ */
+proto.finternet.UnloadDriverRequest.prototype.setDriverVersion = function(value) {
+  return jspb.Message.setProto3StringField(this, 2, value);
 };
 
 
@@ -874,7 +904,8 @@ proto.finternet.UnloadDriverResponse.prototype.toObject = function(opt_includeIn
  */
 proto.finternet.UnloadDriverResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-driverName: jspb.Message.getFieldWithDefault(msg, 1, "")
+driverName: jspb.Message.getFieldWithDefault(msg, 1, ""),
+driverVersion: jspb.Message.getFieldWithDefault(msg, 2, "")
   };
 
   if (includeInstance) {
@@ -915,6 +946,10 @@ proto.finternet.UnloadDriverResponse.deserializeBinaryFromReader = function(msg,
       var value = /** @type {string} */ (reader.readString());
       msg.setDriverName(value);
       break;
+    case 2:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setDriverVersion(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -951,6 +986,13 @@ proto.finternet.UnloadDriverResponse.serializeBinaryToWriter = function(message,
       f
     );
   }
+  f = message.getDriverVersion();
+  if (f.length > 0) {
+    writer.writeString(
+      2,
+      f
+    );
+  }
 };
 
 
@@ -969,6 +1011,24 @@ proto.finternet.UnloadDriverResponse.prototype.getDriverName = function() {
  */
 proto.finternet.UnloadDriverResponse.prototype.setDriverName = function(value) {
   return jspb.Message.setProto3StringField(this, 1, value);
+};
+
+
+/**
+ * optional string driver_version = 2;
+ * @return {string}
+ */
+proto.finternet.UnloadDriverResponse.prototype.getDriverVersion = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.finternet.UnloadDriverResponse} returns this
+ */
+proto.finternet.UnloadDriverResponse.prototype.setDriverVersion = function(value) {
+  return jspb.Message.setProto3StringField(this, 2, value);
 };
 
 
@@ -1005,8 +1065,9 @@ proto.finternet.BindRequest.prototype.toObject = function(opt_includeInstance) {
 proto.finternet.BindRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
 driverName: jspb.Message.getFieldWithDefault(msg, 1, ""),
-path: jspb.Message.getFieldWithDefault(msg, 2, ""),
-accountInfo: jspb.Message.getFieldWithDefault(msg, 3, "")
+driverVersion: jspb.Message.getFieldWithDefault(msg, 2, ""),
+path: jspb.Message.getFieldWithDefault(msg, 3, ""),
+accountInfo: jspb.Message.getFieldWithDefault(msg, 4, "")
   };
 
   if (includeInstance) {
@@ -1049,9 +1110,13 @@ proto.finternet.BindRequest.deserializeBinaryFromReader = function(msg, reader) 
       break;
     case 2:
       var value = /** @type {string} */ (reader.readString());
-      msg.setPath(value);
+      msg.setDriverVersion(value);
       break;
     case 3:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setPath(value);
+      break;
+    case 4:
       var value = /** @type {string} */ (reader.readString());
       msg.setAccountInfo(value);
       break;
@@ -1091,17 +1156,24 @@ proto.finternet.BindRequest.serializeBinaryToWriter = function(message, writer) 
       f
     );
   }
-  f = message.getPath();
+  f = message.getDriverVersion();
   if (f.length > 0) {
     writer.writeString(
       2,
       f
     );
   }
-  f = message.getAccountInfo();
+  f = message.getPath();
   if (f.length > 0) {
     writer.writeString(
       3,
+      f
+    );
+  }
+  f = message.getAccountInfo();
+  if (f.length > 0) {
+    writer.writeString(
+      4,
       f
     );
   }
@@ -1127,10 +1199,10 @@ proto.finternet.BindRequest.prototype.setDriverName = function(value) {
 
 
 /**
- * optional string path = 2;
+ * optional string driver_version = 2;
  * @return {string}
  */
-proto.finternet.BindRequest.prototype.getPath = function() {
+proto.finternet.BindRequest.prototype.getDriverVersion = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
 };
 
@@ -1139,16 +1211,16 @@ proto.finternet.BindRequest.prototype.getPath = function() {
  * @param {string} value
  * @return {!proto.finternet.BindRequest} returns this
  */
-proto.finternet.BindRequest.prototype.setPath = function(value) {
+proto.finternet.BindRequest.prototype.setDriverVersion = function(value) {
   return jspb.Message.setProto3StringField(this, 2, value);
 };
 
 
 /**
- * optional string account_info = 3;
+ * optional string path = 3;
  * @return {string}
  */
-proto.finternet.BindRequest.prototype.getAccountInfo = function() {
+proto.finternet.BindRequest.prototype.getPath = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
 };
 
@@ -1157,8 +1229,26 @@ proto.finternet.BindRequest.prototype.getAccountInfo = function() {
  * @param {string} value
  * @return {!proto.finternet.BindRequest} returns this
  */
-proto.finternet.BindRequest.prototype.setAccountInfo = function(value) {
+proto.finternet.BindRequest.prototype.setPath = function(value) {
   return jspb.Message.setProto3StringField(this, 3, value);
+};
+
+
+/**
+ * optional string account_info = 4;
+ * @return {string}
+ */
+proto.finternet.BindRequest.prototype.getAccountInfo = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 4, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.finternet.BindRequest} returns this
+ */
+proto.finternet.BindRequest.prototype.setAccountInfo = function(value) {
+  return jspb.Message.setProto3StringField(this, 4, value);
 };
 
 
@@ -1195,8 +1285,9 @@ proto.finternet.BindResponse.prototype.toObject = function(opt_includeInstance) 
 proto.finternet.BindResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
 driverName: jspb.Message.getFieldWithDefault(msg, 1, ""),
-path: jspb.Message.getFieldWithDefault(msg, 2, ""),
-accountInfo: jspb.Message.getFieldWithDefault(msg, 3, "")
+driverVersion: jspb.Message.getFieldWithDefault(msg, 2, ""),
+path: jspb.Message.getFieldWithDefault(msg, 3, ""),
+accountInfo: jspb.Message.getFieldWithDefault(msg, 4, "")
   };
 
   if (includeInstance) {
@@ -1239,9 +1330,13 @@ proto.finternet.BindResponse.deserializeBinaryFromReader = function(msg, reader)
       break;
     case 2:
       var value = /** @type {string} */ (reader.readString());
-      msg.setPath(value);
+      msg.setDriverVersion(value);
       break;
     case 3:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setPath(value);
+      break;
+    case 4:
       var value = /** @type {string} */ (reader.readString());
       msg.setAccountInfo(value);
       break;
@@ -1281,17 +1376,24 @@ proto.finternet.BindResponse.serializeBinaryToWriter = function(message, writer)
       f
     );
   }
-  f = message.getPath();
+  f = message.getDriverVersion();
   if (f.length > 0) {
     writer.writeString(
       2,
       f
     );
   }
-  f = message.getAccountInfo();
+  f = message.getPath();
   if (f.length > 0) {
     writer.writeString(
       3,
+      f
+    );
+  }
+  f = message.getAccountInfo();
+  if (f.length > 0) {
+    writer.writeString(
+      4,
       f
     );
   }
@@ -1317,10 +1419,10 @@ proto.finternet.BindResponse.prototype.setDriverName = function(value) {
 
 
 /**
- * optional string path = 2;
+ * optional string driver_version = 2;
  * @return {string}
  */
-proto.finternet.BindResponse.prototype.getPath = function() {
+proto.finternet.BindResponse.prototype.getDriverVersion = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
 };
 
@@ -1329,16 +1431,16 @@ proto.finternet.BindResponse.prototype.getPath = function() {
  * @param {string} value
  * @return {!proto.finternet.BindResponse} returns this
  */
-proto.finternet.BindResponse.prototype.setPath = function(value) {
+proto.finternet.BindResponse.prototype.setDriverVersion = function(value) {
   return jspb.Message.setProto3StringField(this, 2, value);
 };
 
 
 /**
- * optional string account_info = 3;
+ * optional string path = 3;
  * @return {string}
  */
-proto.finternet.BindResponse.prototype.getAccountInfo = function() {
+proto.finternet.BindResponse.prototype.getPath = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
 };
 
@@ -1347,8 +1449,26 @@ proto.finternet.BindResponse.prototype.getAccountInfo = function() {
  * @param {string} value
  * @return {!proto.finternet.BindResponse} returns this
  */
-proto.finternet.BindResponse.prototype.setAccountInfo = function(value) {
+proto.finternet.BindResponse.prototype.setPath = function(value) {
   return jspb.Message.setProto3StringField(this, 3, value);
+};
+
+
+/**
+ * optional string account_info = 4;
+ * @return {string}
+ */
+proto.finternet.BindResponse.prototype.getAccountInfo = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 4, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.finternet.BindResponse} returns this
+ */
+proto.finternet.BindResponse.prototype.setAccountInfo = function(value) {
+  return jspb.Message.setProto3StringField(this, 4, value);
 };
 
 
@@ -1515,7 +1635,8 @@ proto.finternet.UnbindResponse.prototype.toObject = function(opt_includeInstance
 proto.finternet.UnbindResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
 driverName: jspb.Message.getFieldWithDefault(msg, 1, ""),
-accountInfo: jspb.Message.getFieldWithDefault(msg, 3, "")
+driverVersion: jspb.Message.getFieldWithDefault(msg, 3, ""),
+accountInfo: jspb.Message.getFieldWithDefault(msg, 4, "")
   };
 
   if (includeInstance) {
@@ -1558,6 +1679,10 @@ proto.finternet.UnbindResponse.deserializeBinaryFromReader = function(msg, reade
       break;
     case 3:
       var value = /** @type {string} */ (reader.readString());
+      msg.setDriverVersion(value);
+      break;
+    case 4:
+      var value = /** @type {string} */ (reader.readString());
       msg.setAccountInfo(value);
       break;
     default:
@@ -1596,10 +1721,17 @@ proto.finternet.UnbindResponse.serializeBinaryToWriter = function(message, write
       f
     );
   }
-  f = message.getAccountInfo();
+  f = message.getDriverVersion();
   if (f.length > 0) {
     writer.writeString(
       3,
+      f
+    );
+  }
+  f = message.getAccountInfo();
+  if (f.length > 0) {
+    writer.writeString(
+      4,
       f
     );
   }
@@ -1625,10 +1757,10 @@ proto.finternet.UnbindResponse.prototype.setDriverName = function(value) {
 
 
 /**
- * optional string account_info = 3;
+ * optional string driver_version = 3;
  * @return {string}
  */
-proto.finternet.UnbindResponse.prototype.getAccountInfo = function() {
+proto.finternet.UnbindResponse.prototype.getDriverVersion = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
 };
 
@@ -1637,8 +1769,26 @@ proto.finternet.UnbindResponse.prototype.getAccountInfo = function() {
  * @param {string} value
  * @return {!proto.finternet.UnbindResponse} returns this
  */
-proto.finternet.UnbindResponse.prototype.setAccountInfo = function(value) {
+proto.finternet.UnbindResponse.prototype.setDriverVersion = function(value) {
   return jspb.Message.setProto3StringField(this, 3, value);
+};
+
+
+/**
+ * optional string account_info = 4;
+ * @return {string}
+ */
+proto.finternet.UnbindResponse.prototype.getAccountInfo = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 4, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.finternet.UnbindResponse} returns this
+ */
+proto.finternet.UnbindResponse.prototype.setAccountInfo = function(value) {
+  return jspb.Message.setProto3StringField(this, 4, value);
 };
 
 
@@ -1675,8 +1825,9 @@ proto.finternet.ExecutionRequest.prototype.toObject = function(opt_includeInstan
 proto.finternet.ExecutionRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
 name: jspb.Message.getFieldWithDefault(msg, 1, ""),
-input: jspb.Message.getFieldWithDefault(msg, 2, ""),
-type: jspb.Message.getFieldWithDefault(msg, 3, 0),
+version: jspb.Message.getFieldWithDefault(msg, 2, ""),
+input: jspb.Message.getFieldWithDefault(msg, 3, ""),
+type: jspb.Message.getFieldWithDefault(msg, 4, 0),
 binary: msg.getBinary_asB64()
   };
 
@@ -1720,13 +1871,17 @@ proto.finternet.ExecutionRequest.deserializeBinaryFromReader = function(msg, rea
       break;
     case 2:
       var value = /** @type {string} */ (reader.readString());
-      msg.setInput(value);
+      msg.setVersion(value);
       break;
     case 3:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setInput(value);
+      break;
+    case 4:
       var value = /** @type {!proto.finternet.BinaryType} */ (reader.readEnum());
       msg.setType(value);
       break;
-    case 4:
+    case 5:
       var value = /** @type {!Uint8Array} */ (reader.readBytes());
       msg.setBinary(value);
       break;
@@ -1766,24 +1921,31 @@ proto.finternet.ExecutionRequest.serializeBinaryToWriter = function(message, wri
       f
     );
   }
-  f = message.getInput();
+  f = message.getVersion();
   if (f.length > 0) {
     writer.writeString(
       2,
       f
     );
   }
+  f = message.getInput();
+  if (f.length > 0) {
+    writer.writeString(
+      3,
+      f
+    );
+  }
   f = message.getType();
   if (f !== 0.0) {
     writer.writeEnum(
-      3,
+      4,
       f
     );
   }
   f = message.getBinary_asU8();
   if (f.length > 0) {
     writer.writeBytes(
-      4,
+      5,
       f
     );
   }
@@ -1809,10 +1971,10 @@ proto.finternet.ExecutionRequest.prototype.setName = function(value) {
 
 
 /**
- * optional string input = 2;
+ * optional string version = 2;
  * @return {string}
  */
-proto.finternet.ExecutionRequest.prototype.getInput = function() {
+proto.finternet.ExecutionRequest.prototype.getVersion = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
 };
 
@@ -1821,17 +1983,35 @@ proto.finternet.ExecutionRequest.prototype.getInput = function() {
  * @param {string} value
  * @return {!proto.finternet.ExecutionRequest} returns this
  */
-proto.finternet.ExecutionRequest.prototype.setInput = function(value) {
+proto.finternet.ExecutionRequest.prototype.setVersion = function(value) {
   return jspb.Message.setProto3StringField(this, 2, value);
 };
 
 
 /**
- * optional BinaryType type = 3;
+ * optional string input = 3;
+ * @return {string}
+ */
+proto.finternet.ExecutionRequest.prototype.getInput = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.finternet.ExecutionRequest} returns this
+ */
+proto.finternet.ExecutionRequest.prototype.setInput = function(value) {
+  return jspb.Message.setProto3StringField(this, 3, value);
+};
+
+
+/**
+ * optional BinaryType type = 4;
  * @return {!proto.finternet.BinaryType}
  */
 proto.finternet.ExecutionRequest.prototype.getType = function() {
-  return /** @type {!proto.finternet.BinaryType} */ (jspb.Message.getFieldWithDefault(this, 3, 0));
+  return /** @type {!proto.finternet.BinaryType} */ (jspb.Message.getFieldWithDefault(this, 4, 0));
 };
 
 
@@ -1840,21 +2020,21 @@ proto.finternet.ExecutionRequest.prototype.getType = function() {
  * @return {!proto.finternet.ExecutionRequest} returns this
  */
 proto.finternet.ExecutionRequest.prototype.setType = function(value) {
-  return jspb.Message.setProto3EnumField(this, 3, value);
+  return jspb.Message.setProto3EnumField(this, 4, value);
 };
 
 
 /**
- * optional bytes binary = 4;
+ * optional bytes binary = 5;
  * @return {!(string|Uint8Array)}
  */
 proto.finternet.ExecutionRequest.prototype.getBinary = function() {
-  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldWithDefault(this, 4, ""));
+  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldWithDefault(this, 5, ""));
 };
 
 
 /**
- * optional bytes binary = 4;
+ * optional bytes binary = 5;
  * This is a type-conversion wrapper around `getBinary()`
  * @return {string}
  */
@@ -1865,7 +2045,7 @@ proto.finternet.ExecutionRequest.prototype.getBinary_asB64 = function() {
 
 
 /**
- * optional bytes binary = 4;
+ * optional bytes binary = 5;
  * Note that Uint8Array is not supported on all browsers.
  * @see http://caniuse.com/Uint8Array
  * This is a type-conversion wrapper around `getBinary()`
@@ -1882,7 +2062,7 @@ proto.finternet.ExecutionRequest.prototype.getBinary_asU8 = function() {
  * @return {!proto.finternet.ExecutionRequest} returns this
  */
 proto.finternet.ExecutionRequest.prototype.setBinary = function(value) {
-  return jspb.Message.setProto3BytesField(this, 4, value);
+  return jspb.Message.setProto3BytesField(this, 5, value);
 };
 
 
@@ -2316,7 +2496,7 @@ proto.finternet.DriverDetailsResponse.prototype.toObject = function(opt_includeI
  */
 proto.finternet.DriverDetailsResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-success: jspb.Message.getBooleanFieldWithDefault(msg, 1, false),
+message: jspb.Message.getFieldWithDefault(msg, 1, ""),
 driverDataList: jspb.Message.toObjectList(msg.getDriverDataList(),
     proto.finternet.DriverDetail.toObject, includeInstance)
   };
@@ -2356,8 +2536,8 @@ proto.finternet.DriverDetailsResponse.deserializeBinaryFromReader = function(msg
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {boolean} */ (reader.readBool());
-      msg.setSuccess(value);
+      var value = /** @type {string} */ (reader.readString());
+      msg.setMessage(value);
       break;
     case 2:
       var value = new proto.finternet.DriverDetail;
@@ -2393,9 +2573,9 @@ proto.finternet.DriverDetailsResponse.prototype.serializeBinary = function() {
  */
 proto.finternet.DriverDetailsResponse.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getSuccess();
-  if (f) {
-    writer.writeBool(
+  f = message.getMessage();
+  if (f.length > 0) {
+    writer.writeString(
       1,
       f
     );
@@ -2412,20 +2592,20 @@ proto.finternet.DriverDetailsResponse.serializeBinaryToWriter = function(message
 
 
 /**
- * optional bool success = 1;
- * @return {boolean}
+ * optional string message = 1;
+ * @return {string}
  */
-proto.finternet.DriverDetailsResponse.prototype.getSuccess = function() {
-  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 1, false));
+proto.finternet.DriverDetailsResponse.prototype.getMessage = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 1, ""));
 };
 
 
 /**
- * @param {boolean} value
+ * @param {string} value
  * @return {!proto.finternet.DriverDetailsResponse} returns this
  */
-proto.finternet.DriverDetailsResponse.prototype.setSuccess = function(value) {
-  return jspb.Message.setProto3BooleanField(this, 1, value);
+proto.finternet.DriverDetailsResponse.prototype.setMessage = function(value) {
+  return jspb.Message.setProto3StringField(this, 1, value);
 };
 
 

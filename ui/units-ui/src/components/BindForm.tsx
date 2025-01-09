@@ -19,6 +19,7 @@ import {
 import { JsonPrettifier } from "./JsonPrettify";
 import { getDriverList } from "@/utils/grpcClient";
 
+
 export default function BindForm() {
   const [driverName, setDriverName] = useState("");
   const [path, setPath] = useState("");
@@ -56,26 +57,27 @@ export default function BindForm() {
   const fetchDrivers = async () => {
     try {
       const res = await getDriverList()
+      const { driverDataList } = res || {}
       console.log(res)
+      // const mockRes = {
+      //   "success": true,
+      //   "driverData": [
+      //     {
+      //       "name": "mono",
+      //       "version": "0.1.0"
+      //     },
+      //     {
+      //       "name": "beta",
+      //       "version": "0.1.0"
+      //     }
+      //   ]
+      // }
+
+      const driverList = driverDataList.map(driverObj => driverObj.name)
+      setDriverList(driverList)
     } catch (error) {
       console.log(error)
     }
-    const mockRes = {
-      "success": true,
-      "driverData": [
-        {
-          "name": "mono",
-          "version": "0.1.0"
-        },
-        {
-          "name": "beta",
-          "version": "0.1.0"
-        }
-      ]
-    }
-
-    const driverList = mockRes.driverData.map(driverObj => driverObj.name)
-    setDriverList(driverList)
   }
 
   useEffect(() => {
@@ -110,6 +112,7 @@ export default function BindForm() {
                   {Array.isArray(driverList) && driverList.map((driver: string) => {
                     return (
                       <DropdownMenuCheckboxItem
+                        key={driver}
                         checked={driverName === driver}
                         onCheckedChange={driverSelectHandler(driver)}
                       >
