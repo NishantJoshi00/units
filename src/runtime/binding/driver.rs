@@ -50,6 +50,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
             let mut lower_store = wasmtime::Store::new(&driver.engine, PlatformState::default());
             let mut lower_linker = wasmtime::Linker::new(&driver.engine);
             platform.bind(&mut lower_linker)?;
+            wasi_common::sync::add_to_linker(&mut lower_linker, |state| &mut state.wasi)?;
 
             let driver_list = driver
                 .drivers
@@ -124,6 +125,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
                         wasmtime::Store::new(&driver.engine, PlatformState::default());
                     let mut lower_linker = wasmtime::Linker::new(&driver.engine);
                     platform.bind(&mut lower_linker)?;
+                    wasi_common::sync::add_to_linker(&mut lower_linker, |state| &mut state.wasi)?;
 
                     let driver_list = driver
                         .drivers
@@ -210,6 +212,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
             let mut lower_store = wasmtime::Store::new(&driver.engine, PlatformState::default());
             let mut lower_linker = wasmtime::Linker::new(&driver.engine);
             platform.bind(&mut lower_linker)?;
+            wasi_common::sync::add_to_linker(&mut lower_linker, |state| &mut state.wasi)?;
 
             let driver_list = driver
                 .drivers
@@ -286,6 +289,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
             let mut lower_store = wasmtime::Store::new(&driver.engine, PlatformState::default());
             let mut lower_linker = wasmtime::Linker::new(&driver.engine);
             platform.bind(&mut lower_linker)?;
+            wasi_common::sync::add_to_linker(&mut lower_linker, |state| &mut state.wasi)?;
 
             let driver_list = driver
                 .drivers
