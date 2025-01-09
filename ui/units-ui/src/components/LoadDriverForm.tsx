@@ -10,13 +10,24 @@ import { JsonPrettifier } from '@/components/JsonPrettify';
 import { load_driver } from '@/lib/backend';
 import { Loader2 } from 'lucide-react'
 
-export default function LoadDriverForm() {
+
+type LoadDriverFormProps = {
+    drivers: boolean;
+    setDrivers: React.Dispatch<React.SetStateAction<boolean>>;
+  };
+
+
+export default function LoadDriverForm({ drivers, setDrivers }: LoadDriverFormProps) {
     const [driverName, setDriverName] = useState('')
     const [driverVersion, setDriverVersion] = useState('')
     const [driverType, setDriverType] = useState('WASM')
     const [driverBinary, setDriverBinary] = useState<File | null>(null)
     const [loading, setLoading] = useState(false)
     const [output, setOutput] = useState<string | null>(null)
+
+    const handleToggle = () => {
+        setDrivers(!drivers); // Toggle the state
+      };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -26,6 +37,7 @@ export default function LoadDriverForm() {
         try {
             const response = await load_driver(driverName, driverVersion, driverType, driverBinary!);
             setOutput(response)
+            handleToggle();
         } catch (error) {
             setOutput('An error occurred while loading the driver.')
             console.error(error);

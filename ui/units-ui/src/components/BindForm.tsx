@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState ,useRef} from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { bind } from "@/lib/backend";
+import { bind,createDriverDetailClient  } from "@/lib/backend";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,16 +17,33 @@ import {
 
 
 import { JsonPrettifier } from "./JsonPrettify";
-import { getDriverList } from "@/utils/grpcClient";
+// import { getDriverList } from "@/utils/grpcClient";
 
 
-export default function BindForm() {
+type BindFormProps = {
+  drivers: boolean;
+};
+
+export default function BindForm({ drivers }: BindFormProps) {
   const [driverName, setDriverName] = useState("");
+  const [driverVersion, setDriverVersion] = useState("");
   const [path, setPath] = useState("");
   const [accountInfo, setAccountInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
-  const [driverList, setDriverList] = useState([])
+  const [driverList, setDriverList] = useState<string[]>(["No Token Handler"])
+  const prevDriverListRef = useRef<string[]>([]);
+
+  interface DriverDetail {
+    name: string;
+    version: string;
+  }
+  
+  interface DriverDetailResponse {
+    message: string;
+    driverDataList: DriverDetail[];
+  }
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +51,7 @@ export default function BindForm() {
 
     // Simulating an API call
     try {
-      const response = await bind(driverName, path, accountInfo);
+      const response = await bind(driverName,driverVersion, path, accountInfo);
       setOutput(response);
     } catch (error) {
       setOutput("An error occurred while binding the driver.");
@@ -46,6 +63,7 @@ export default function BindForm() {
   const resetForm = () => {
     setOutput(null);
     setDriverName("");
+    setDriverVersion("");
     setPath("");
     setAccountInfo("");
   };
@@ -56,9 +74,17 @@ export default function BindForm() {
 
   const fetchDrivers = async () => {
     try {
-      const res = await getDriverList()
-      const { driverDataList } = res || {}
-      console.log(res)
+      const res = await createDriverDetailClient()
+      // console.log("Raw response:", res);
+
+    // Parse the response into a JSON object
+    const response = JSON.parse(res) as DriverDetailResponse;
+    // console.log("Parsed response:", res);
+      // console.log("Response:", response);
+
+      const { driverDataList } = response || {};
+      // console.log("Driver Data List after destructuring:", driverDataList);
+
       // const mockRes = {
       //   "success": true,
       //   "driverData": [
@@ -72,9 +98,13 @@ export default function BindForm() {
       //     }
       //   ]
       // }
-
-      const driverList = driverDataList.map(driverObj => driverObj.name)
-      setDriverList(driverList)
+      
+      const driverList = response.driverDataList.map((driverObj) => driverObj.name);
+      // console.log("Driver Names:", driverList);
+      if (driverList.length > 0) {
+        setDriverList(driverList);
+      }
+      
     } catch (error) {
       console.log(error)
     }
@@ -82,7 +112,7 @@ export default function BindForm() {
 
   useEffect(() => {
     fetchDrivers()
-  }, [])
+  }, [drivers])
 
   return (
     <Card>
@@ -122,6 +152,15 @@ export default function BindForm() {
                   })}
                 </DropdownMenuContent>
               </DropdownMenu>
+            </div>
+            <div>
+              <Label htmlFor="version">Driver Version</Label>
+              <Input
+                id="version"
+                value={driverVersion}
+                onChange={(e) => setDriverVersion(e.target.value)}
+                required
+              />
             </div>
             <div>
               <Label htmlFor="path">Token Path</Label>
