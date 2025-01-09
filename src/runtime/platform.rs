@@ -13,7 +13,7 @@ use std::sync::{Arc, RwLock};
 
 use std::sync::Mutex;
 
-use super::types;
+use super::{integration, types};
 
 #[derive(Clone)]
 pub struct Platform {
@@ -42,6 +42,17 @@ impl Platform {
 
 impl Storage {
     pub fn get(&self, key: &str) -> anyhow::Result<Option<String>> {
+        get
+    }
+
+    pub fn get_redis(&self, key: &str) -> anyhow::Result<Option<String>> {
+        let client = self
+            .redis
+            .lock()
+            .map_err(|e| anyhow::anyhow!("Error getting redis client: {:?}", e))?;
+        let mut con = client.get_connection()?;
+        redis::cmd("GET").arg(key).query::<Option<String>>(&mut con);
+
         self.kev
             .read()
             .map(|x| x.get(key).cloned())
@@ -49,12 +60,33 @@ impl Storage {
     }
 
     pub fn set(&self, key: &str, value: &str) -> anyhow::Result<()> {
+        match key {
+            key if key.starts_with("sol:") => self.set_sol(key, value),
+            key => self.set_redis(key, value),
+        }
+    }
+
+    pub fn set_redis(&self, key: &str, value: &str) -> anyhow::Result<()> {
         let client = self
             .redis
             .lock()
             .map_err(|e| anyhow::anyhow!("Error getting redis client: {:?}", e))?;
         let mut con = client.get_connection()?;
         redis::cmd("SET").arg(key).arg(value).exec(&mut con)?;
+
+        self.kev
+            .write()
+            .map(|mut x| {
+                x.insert(key.to_string(), value.to_string());
+            })
+            .map_err(|e| anyhow::anyhow!("Error writing to storage: {:?}", e))
+    }
+
+    pub fn set_sol(&self, key: &str, value: &str) -> anyhow::Result<()> {
+
+        tracing::info!(?key, ?value, "submitting proof");
+        let output = integration::solana::transfer_token(key.to_string(), value.to_string());
+        tracing::info!(signature = ?output, "triggering solana transfer");
 
         self.kev
             .write()
