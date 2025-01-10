@@ -1,21 +1,29 @@
 use tonic::{Request, Response};
 
+use crate::runtime::driver::DriverInfo;
+use crate::runtime::resolver::PathInfo;
 use crate::service::proto_types::BinaryType;
+use crate::service::proto_types::DriverDetail;
 
 use super::Runtime;
 
 mod server_traits {
     pub use crate::service::proto_types::{
-        bind_server::Bind, driver_server::Driver, execution_server::Execution,
+        bind_server::Bind,
+        driver_details_server::DriverDetails, // for driver details
+        driver_server::Driver,
+        execution_server::Execution,
     };
 }
 
 mod types {
     pub use crate::service::proto_types::{BindRequest, BindResponse};
+    pub use crate::service::proto_types::{DriverDetailsRequest, DriverDetailsResponse};
     pub use crate::service::proto_types::{ExecutionRequest, ExecutionResponse};
     pub use crate::service::proto_types::{LoadDriverRequest, LoadDriverResponse};
     pub use crate::service::proto_types::{UnbindRequest, UnbindResponse};
     pub use crate::service::proto_types::{UnloadDriverRequest, UnloadDriverResponse};
+    //for sending all driver details
 }
 
 #[tonic::async_trait]
@@ -69,20 +77,29 @@ impl server_traits::Bind for super::Runtime {
             .read()
             .map_err(|_| tonic::Status::internal("Failed to lock drivers".to_string()))?;
 
-        if !reader.contains_key(&request.driver_name) {
-            tracing::error!(name = %request.driver_name, "Driver not found");
+        let driver_info = DriverInfo {
+            name: request.driver_name.clone(),
+            version: request.driver_version.clone(),
+        };
+
+        if !reader.contains_key(&driver_info) {
+            tracing::error!(name = %request.driver_name,version=%request.driver_version, "Driver not found");
             return Err(tonic::Status::not_found("Driver not found"));
         }
 
-        writer.insert(
-            request.path.clone(),
-            (request.driver_name.clone(), request.account_info.clone()),
-        );
+        let path_info = PathInfo {
+            driver_name: request.driver_name.clone(),
+            driver_version: request.driver_version.clone(),
+            account_info: request.account_info.clone(),
+        };
 
-        tracing::info!(path = %request.path, driver = %request.driver_name, account_info = %request.account_info, "Path bound");
+        writer.insert(request.path.clone(), path_info);
+
+        tracing::info!(path = %request.path, driver = %request.driver_name,verion=%request.driver_version ,account_info = %request.account_info, "Path bound");
 
         let output = types::BindResponse {
             driver_name: request.driver_name,
+            driver_version: request.driver_version,
             account_info: request.account_info,
             path: request.path,
         };
@@ -106,9 +123,10 @@ impl server_traits::Bind for super::Runtime {
 
         match output {
             None => Err(tonic::Status::not_found("Path not found")),
-            Some((driver_name, account_info)) => Ok(Response::new(types::UnbindResponse {
-                driver_name,
-                account_info,
+            Some(path_info) => Ok(Response::new(types::UnbindResponse {
+                driver_name: path_info.driver_name,
+                driver_version: path_info.driver_version,
+                account_info: path_info.account_info,
             })),
         }
     }
@@ -122,7 +140,7 @@ impl server_traits::Driver for super::Runtime {
     ) -> Result<Response<types::LoadDriverResponse>, tonic::Status> {
         let request = request.into_inner();
 
-        tracing::info!(name = %request.driver_name, "Adding driver");
+        tracing::info!(name = %request.driver_name,version=%request.driver_version, "Adding driver");
 
         let module = match request.driver_type() {
             BinaryType::Wat | BinaryType::Wasm => {
@@ -134,7 +152,11 @@ impl server_traits::Driver for super::Runtime {
         tracing::info!(name = ?module.name(), "Module Created");
 
         self.driver_layer
-            .add_driver(request.driver_name.clone(), module)
+            .add_driver(
+                request.driver_name.clone(),
+                module,
+                request.driver_version.clone(),
+            )
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         Ok(tonic::Response::new(types::LoadDriverResponse {
@@ -149,12 +171,49 @@ impl server_traits::Driver for super::Runtime {
     ) -> Result<Response<types::UnloadDriverResponse>, tonic::Status> {
         let request = request.into_inner();
 
+        let driver_info = DriverInfo {
+            name: request.driver_name.clone(),
+            version: request.driver_version.clone(),
+        };
+
         self.driver_layer
-            .remove_driver(request.driver_name.clone())
+            .remove_driver(driver_info)
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         Ok(tonic::Response::new(types::UnloadDriverResponse {
             driver_name: request.driver_name,
+            driver_version: request.driver_version,
+        }))
+    }
+}
+
+#[tonic::async_trait]
+impl server_traits::DriverDetails for super::Runtime {
+    async fn send_details(
+        &self,
+        _request: Request<types::DriverDetailsRequest>,
+    ) -> Result<Response<types::DriverDetailsResponse>, tonic::Status> {
+        let mut all_driver_details = Vec::<DriverDetail>::new();
+        let mut message = String::from("Drivers Detail list found!!");
+        let reader = &self.driver_layer.drivers;
+        let locked_map = reader
+            .read()
+            .map_err(|_| tonic::Status::internal("Failed to lock map"))?;
+        for (driver_info, _module) in locked_map.iter() {
+            let new_driver = DriverDetail {
+                name: driver_info.name.clone(),
+                version: driver_info.version.clone(),
+            };
+            all_driver_details.push(new_driver);
+        }
+
+        if all_driver_details.is_empty() {
+            message = String::from("Driver Details not found!!")
+        }
+
+        Ok(tonic::Response::new(types::DriverDetailsResponse {
+            message,
+            driver_data: all_driver_details,
         }))
     }
 }
