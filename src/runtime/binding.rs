@@ -14,6 +14,7 @@ pub struct State {
 
 pub struct Descriptor {
     driver_name: String,
+    driver_version: String,
     account_info: serde_json::Value,
 }
 
