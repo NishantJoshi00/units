@@ -14,6 +14,7 @@ use self::binding::Binding;
 
 pub mod binding;
 pub mod driver;
+pub mod integration;
 pub mod platform;
 pub mod process;
 pub mod resolver;
