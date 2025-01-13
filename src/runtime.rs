@@ -8,6 +8,8 @@
 //!    the assets.
 //!
 
+use std::sync::{mpsc, Arc};
+
 use crate::types::WasmString;
 
 use self::binding::Binding;
@@ -27,16 +29,23 @@ pub struct Runtime {
     pub driver_layer: driver::DriverRuntime, // the resolver is part of the driver layer
     pub platform_layer: platform::Platform,
     pub config: types::RuntimeConfig,
+    pub event_sender: Arc<mpsc::Sender<types::Event>>,
 }
 
 impl Runtime {
     pub fn init(config: types::Config) -> anyhow::Result<Self> {
         tracing::debug!("Initializing runtime");
+
+        let (tx, rx) = mpsc::channel();
+
+
+
         Ok(Self {
             process_layer: process::ProcessRuntime::init(config.process)?,
             driver_layer: driver::DriverRuntime::init(config.driver)?,
             platform_layer: platform::Platform::init(config.platform)?,
             config: config.runtime,
+            event_sender: Arc::new(tx),
         })
     }
 
@@ -47,7 +56,7 @@ impl Runtime {
         );
         let mut linker = wasmtime::Linker::new(&self.process_layer.engine);
 
-        (self.driver_layer, self.platform_layer).bind(&mut linker)?;
+        (self.driver_layer, self.platform_layer).bind(&mut linker, self.event_sender.as_ref().clone())?;
 
         let instance = linker.instantiate(&mut store, &module)?;
         let memory = instance

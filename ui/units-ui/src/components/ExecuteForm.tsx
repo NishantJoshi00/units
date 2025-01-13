@@ -104,7 +104,7 @@ export default function ExecuteForm() {
               <Input
                 id="binary"
                 type="file"
-                className='hover:bg-secondary'
+                className='hover:bg-secondary cursor-pointer'
                 accept={
                   type === "WAT" ? ".wat" : type === "WASM" ? ".wasm" : ""
                 }

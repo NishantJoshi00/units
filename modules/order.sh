@@ -2,7 +2,7 @@
 
 set -e
 
-pushd driver/ || exit
+pushd sol-driver/ || exit
 
 make build
 

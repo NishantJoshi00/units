@@ -1,5 +1,3 @@
-use wasm_bindgen::prelude::wasm_bindgen;
-
 mod safe_driver;
 
 #[link(wasm_import_module = "platform")]
