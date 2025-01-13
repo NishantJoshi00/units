@@ -38,8 +38,6 @@ impl Runtime {
 
         let (tx, rx) = mpsc::channel();
 
-
-
         Ok(Self {
             process_layer: process::ProcessRuntime::init(config.process)?,
             driver_layer: driver::DriverRuntime::init(config.driver)?,
@@ -56,7 +54,8 @@ impl Runtime {
         );
         let mut linker = wasmtime::Linker::new(&self.process_layer.engine);
 
-        (self.driver_layer, self.platform_layer).bind(&mut linker, self.event_sender.as_ref().clone())?;
+        (self.driver_layer, self.platform_layer)
+            .bind(&mut linker, self.event_sender.as_ref().clone())?;
 
         let instance = linker.instantiate(&mut store, &module)?;
         let memory = instance

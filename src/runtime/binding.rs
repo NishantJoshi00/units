@@ -7,7 +7,11 @@ mod driver;
 mod platform;
 
 pub trait Binding<T> {
-    fn bind(self, linker: &mut wasmtime::Linker<T>, event_bridge: mpsc::Sender<Event>) -> anyhow::Result<()>;
+    fn bind(
+        self,
+        linker: &mut wasmtime::Linker<T>,
+        event_bridge: mpsc::Sender<Event>,
+    ) -> anyhow::Result<()>;
 }
 
 pub struct State {

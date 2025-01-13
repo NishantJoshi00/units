@@ -43,7 +43,6 @@ pub struct ProcessConfig {}
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct PlatformConfig {}
 
-
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct Event {
     pub loc: Loc,
@@ -56,7 +55,7 @@ pub struct Event {
 #[derive(Debug, Clone, serde::Deserialize)]
 pub enum Level {
     Platform,
-    Driver
+    Driver,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -66,7 +65,7 @@ pub enum CallType {
     Transfer,
     View,
     Set,
-    Get
+    Get,
 }
 
 #[derive(Debug, Clone, serde::Deserialize, Default)]
