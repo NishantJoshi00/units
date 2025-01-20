@@ -20,6 +20,7 @@ mod types {
     pub use crate::service::proto_types::{BindRequest, BindResponse};
     pub use crate::service::proto_types::{DriverDetailsRequest, DriverDetailsResponse};
     pub use crate::service::proto_types::{ExecutionRequest, ExecutionResponse};
+    pub use crate::service::proto_types::{ListResolverRequest, ListResolverResponse, PathMapping};
     pub use crate::service::proto_types::{LoadDriverRequest, LoadDriverResponse};
     pub use crate::service::proto_types::{UnbindRequest, UnbindResponse};
     pub use crate::service::proto_types::{UnloadDriverRequest, UnloadDriverResponse};
@@ -134,6 +135,32 @@ impl server_traits::Bind for super::Runtime {
 
 #[tonic::async_trait]
 impl server_traits::Driver for super::Runtime {
+    async fn list_resolver(
+        &self,
+        _request: Request<types::ListResolverRequest>,
+    ) -> Result<Response<types::ListResolverResponse>, tonic::Status> {
+        let output = self
+            .driver_layer
+            .resolver
+            .mount_points
+            .read()
+            .map_err(|_| tonic::Status::internal("Failed to lock mount points".to_string()))?;
+
+        let output = output.iter().map(|(path, path_info)| {
+            let path = path.clone();
+            let path_info = path_info.clone();
+            types::PathMapping {
+                path,
+                driver_name: path_info.driver_name,
+                driver_version: path_info.driver_version,
+                account_info: path_info.account_info,
+            }
+        });
+
+        Ok(Response::new(types::ListResolverResponse {
+            path_mapping: output.collect(),
+        }))
+    }
     async fn load_driver(
         &self,
         request: Request<types::LoadDriverRequest>,

@@ -8,6 +8,23 @@ service Driver {
 
   // UnloadDriver
   rpc UnloadDriver(UnloadDriverRequest) returns (UnloadDriverResponse);
+
+  // ListResolver
+  rpc ListResolver(ListResolverRequest) returns (ListResolverResponse);
+}
+
+message ListResolverRequest {
+}
+
+message ListResolverResponse {
+    repeated PathMapping path_mapping = 1;
+}
+
+message PathMapping {
+    string path = 1;
+    string driver_name = 2;
+    string driver_version = 3;
+    string account_info = 4;
 }
 
 message LoadDriverRequest {
@@ -81,7 +98,7 @@ message ExecutionRequest {
 }
 message ExecutionResponse { string output = 1; }
 
-service DriverDetails{
+service DriverDetails {
   rpc SendDetails(DriverDetailsRequest) returns (DriverDetailsResponse);
 }
 
