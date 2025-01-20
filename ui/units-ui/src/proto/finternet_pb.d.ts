@@ -60,6 +60,9 @@ export class UnloadDriverRequest extends jspb.Message {
   getDriverName(): string;
   setDriverName(value: string): UnloadDriverRequest;
 
+  getDriverVersion(): string;
+  setDriverVersion(value: string): UnloadDriverRequest;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): UnloadDriverRequest.AsObject;
   static toObject(includeInstance: boolean, msg: UnloadDriverRequest): UnloadDriverRequest.AsObject;
@@ -71,12 +74,16 @@ export class UnloadDriverRequest extends jspb.Message {
 export namespace UnloadDriverRequest {
   export type AsObject = {
     driverName: string,
+    driverVersion: string,
   }
 }
 
 export class UnloadDriverResponse extends jspb.Message {
   getDriverName(): string;
   setDriverName(value: string): UnloadDriverResponse;
+
+  getDriverVersion(): string;
+  setDriverVersion(value: string): UnloadDriverResponse;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): UnloadDriverResponse.AsObject;
@@ -89,12 +96,16 @@ export class UnloadDriverResponse extends jspb.Message {
 export namespace UnloadDriverResponse {
   export type AsObject = {
     driverName: string,
+    driverVersion: string,
   }
 }
 
 export class BindRequest extends jspb.Message {
   getDriverName(): string;
   setDriverName(value: string): BindRequest;
+
+  getDriverVersion(): string;
+  setDriverVersion(value: string): BindRequest;
 
   getPath(): string;
   setPath(value: string): BindRequest;
@@ -113,6 +124,7 @@ export class BindRequest extends jspb.Message {
 export namespace BindRequest {
   export type AsObject = {
     driverName: string,
+    driverVersion: string,
     path: string,
     accountInfo: string,
   }
@@ -121,6 +133,9 @@ export namespace BindRequest {
 export class BindResponse extends jspb.Message {
   getDriverName(): string;
   setDriverName(value: string): BindResponse;
+
+  getDriverVersion(): string;
+  setDriverVersion(value: string): BindResponse;
 
   getPath(): string;
   setPath(value: string): BindResponse;
@@ -139,6 +154,7 @@ export class BindResponse extends jspb.Message {
 export namespace BindResponse {
   export type AsObject = {
     driverName: string,
+    driverVersion: string,
     path: string,
     accountInfo: string,
   }
@@ -166,6 +182,9 @@ export class UnbindResponse extends jspb.Message {
   getDriverName(): string;
   setDriverName(value: string): UnbindResponse;
 
+  getDriverVersion(): string;
+  setDriverVersion(value: string): UnbindResponse;
+
   getAccountInfo(): string;
   setAccountInfo(value: string): UnbindResponse;
 
@@ -180,6 +199,7 @@ export class UnbindResponse extends jspb.Message {
 export namespace UnbindResponse {
   export type AsObject = {
     driverName: string,
+    driverVersion: string,
     accountInfo: string,
   }
 }
@@ -187,6 +207,9 @@ export namespace UnbindResponse {
 export class ExecutionRequest extends jspb.Message {
   getName(): string;
   setName(value: string): ExecutionRequest;
+
+  getVersion(): string;
+  setVersion(value: string): ExecutionRequest;
 
   getInput(): string;
   setInput(value: string): ExecutionRequest;
@@ -210,6 +233,7 @@ export class ExecutionRequest extends jspb.Message {
 export namespace ExecutionRequest {
   export type AsObject = {
     name: string,
+    version: string,
     input: string,
     type: BinaryType,
     binary: Uint8Array | string,
@@ -231,6 +255,66 @@ export class ExecutionResponse extends jspb.Message {
 export namespace ExecutionResponse {
   export type AsObject = {
     output: string,
+  }
+}
+
+export class DriverDetailsRequest extends jspb.Message {
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): DriverDetailsRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: DriverDetailsRequest): DriverDetailsRequest.AsObject;
+  static serializeBinaryToWriter(message: DriverDetailsRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): DriverDetailsRequest;
+  static deserializeBinaryFromReader(message: DriverDetailsRequest, reader: jspb.BinaryReader): DriverDetailsRequest;
+}
+
+export namespace DriverDetailsRequest {
+  export type AsObject = {
+  }
+}
+
+export class DriverDetail extends jspb.Message {
+  getName(): string;
+  setName(value: string): DriverDetail;
+
+  getVersion(): string;
+  setVersion(value: string): DriverDetail;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): DriverDetail.AsObject;
+  static toObject(includeInstance: boolean, msg: DriverDetail): DriverDetail.AsObject;
+  static serializeBinaryToWriter(message: DriverDetail, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): DriverDetail;
+  static deserializeBinaryFromReader(message: DriverDetail, reader: jspb.BinaryReader): DriverDetail;
+}
+
+export namespace DriverDetail {
+  export type AsObject = {
+    name: string,
+    version: string,
+  }
+}
+
+export class DriverDetailsResponse extends jspb.Message {
+  getMessage(): string;
+  setMessage(value: string): DriverDetailsResponse;
+
+  getDriverDataList(): Array<DriverDetail>;
+  setDriverDataList(value: Array<DriverDetail>): DriverDetailsResponse;
+  clearDriverDataList(): DriverDetailsResponse;
+  addDriverData(value?: DriverDetail, index?: number): DriverDetail;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): DriverDetailsResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: DriverDetailsResponse): DriverDetailsResponse.AsObject;
+  static serializeBinaryToWriter(message: DriverDetailsResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): DriverDetailsResponse;
+  static deserializeBinaryFromReader(message: DriverDetailsResponse, reader: jspb.BinaryReader): DriverDetailsResponse;
+}
+
+export namespace DriverDetailsResponse {
+  export type AsObject = {
+    message: string,
+    driverDataList: Array<DriverDetail.AsObject>,
   }
 }
 

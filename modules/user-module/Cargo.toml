@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [features]
-default = ["transfer"]
+default = ["view"]
 transfer = []
 view = []
 

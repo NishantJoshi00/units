@@ -1,9 +1,14 @@
+use std::sync::mpsc;
+
 use anyhow::ensure;
+use serde_json::json;
 use wasi_common::sync::WasiCtxBuilder;
 use wasi_common::WasiCtx;
 
+use crate::runtime::driver::DriverInfo;
 use crate::runtime::driver::DriverRuntime;
 use crate::runtime::platform::Platform;
+use crate::runtime::types::Event;
 use crate::types::WasmString;
 
 use super::{Binding, Descriptor, State};
@@ -20,9 +25,14 @@ impl Binding<State> for (DriverRuntime, Platform) {
     ///   transaction.
     /// - `done`: This function is called to finalize the intent and perform the transaction.
     ///
-    fn bind(self, linker: &mut wasmtime::Linker<State>) -> anyhow::Result<()> {
+    fn bind(
+        self,
+        linker: &mut wasmtime::Linker<State>,
+        event_bridge: mpsc::Sender<Event>,
+    ) -> anyhow::Result<()> {
         let driver = self.0.clone();
         let platform = self.1.clone();
+        let event_channel = event_bridge.clone();
 
         // this will create a asset descriptor
         // this is used to store the account information for this transaction
@@ -36,27 +46,43 @@ impl Binding<State> for (DriverRuntime, Platform) {
             let path_name = WasmString::from_caller(&mut caller, (path_ptr, path_len))?;
             tracing::info!(system = "driver", func = "intend", "syscall");
 
-            let (driver_name, account_info) = caller
+            event_channel.send(Event {
+                loc: crate::runtime::types::Loc::Start,
+                event_type: crate::runtime::types::EventType::Info,
+                level: crate::runtime::types::Level::Driver,
+                call_type: crate::runtime::types::CallType::Intend,
+                data: json!({
+                    "path": path_name.clone().into_str(),
+                }),
+            })?;
+
+            let path_info = caller
                 .data()
                 .resolver
                 .mount_points
                 .read()
                 .map_err(|_| anyhow::anyhow!("lock failed"))?
                 .get(path_name.into_str())
-                .ok_or_else(|| anyhow::anyhow!("Path not found"))?
-                .clone();
+                .cloned()
+                .ok_or_else(|| anyhow::anyhow!("Path not found"))?;
 
             let mut lower_store = wasmtime::Store::new(&driver.engine, PlatformState::default());
             let mut lower_linker = wasmtime::Linker::new(&driver.engine);
-            platform.bind(&mut lower_linker)?;
+            platform.bind(&mut lower_linker, event_channel.clone())?;
             wasi_common::sync::add_to_linker(&mut lower_linker, |state| &mut state.wasi)?;
 
-            let driver_module = driver
+            let driver_list = driver
                 .drivers
                 .read()
                 .map_err(|_| anyhow::anyhow!("lock failed"))?;
-            let driver_module = driver_module
-                .get(&driver_name)
+
+            let driver_info = DriverInfo {
+                name: path_info.driver_name.clone(),
+                version: path_info.driver_version.clone(),
+            };
+
+            let driver_module = driver_list
+                .get(&driver_info)
                 .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
 
             let lower_instance = lower_linker.instantiate(&mut lower_store, driver_module)?;
@@ -64,7 +90,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
                 .get_memory(&mut lower_store, "memory")
                 .ok_or_else(|| anyhow::anyhow!("No memory"))?;
 
-            let input = WasmString::new(&account_info);
+            let input = WasmString::new(&path_info.account_info);
             let loaded_input = input.allocate_on_wasm(&lower_memory, &mut lower_store)?;
             let intend_caller = lower_instance
                 .get_typed_func::<(i32, i32), (i32, i32)>(&mut lower_store, "intend")?;
@@ -77,7 +103,8 @@ impl Binding<State> for (DriverRuntime, Platform) {
             caller.data_mut().descriptors.insert(
                 key.clone(),
                 Descriptor {
-                    driver_name,
+                    driver_name: path_info.driver_name.clone(),
+                    driver_version: path_info.driver_version.clone(),
                     account_info: serde_json::from_str(output.into_str())?,
                 },
             );
@@ -89,11 +116,22 @@ impl Binding<State> for (DriverRuntime, Platform) {
 
             let loaded_str = WasmString::new(&key).allocate_on_caller(&memory, &mut caller)?;
 
+            event_channel.send(Event {
+                loc: crate::runtime::types::Loc::End,
+                event_type: crate::runtime::types::EventType::Info,
+                level: crate::runtime::types::Level::Driver,
+                call_type: crate::runtime::types::CallType::Intend,
+                data: json!({
+                    "key": key,
+                }),
+            })?;
+
             Ok(loaded_str)
         };
 
         let driver = self.0.clone();
         let platform = self.1.clone();
+        let event_channel = event_bridge.clone();
 
         // this will close the asset descriptor
         // this is used to finalize the transaction
@@ -104,27 +142,43 @@ impl Binding<State> for (DriverRuntime, Platform) {
             let key = WasmString::from_caller(&mut caller, (key_ptr, key_len))?;
             let value = caller.data().descriptors.get(key.clone().into_str());
 
+            event_channel.send(Event {
+                loc: crate::runtime::types::Loc::Start,
+                event_type: crate::runtime::types::EventType::Info,
+                level: crate::runtime::types::Level::Driver,
+                call_type: crate::runtime::types::CallType::Done,
+                data: json!({
+                    "key": key.clone().into_str(),
+                }),
+            })?;
+
             match value {
                 None => anyhow::bail!("Descriptor not found"),
                 Some(value) => {
                     // get the driver, and execute the done function
 
                     let driver_name = value.driver_name.clone();
+                    let driver_version = value.driver_version.clone();
                     let account_info = value.account_info.clone();
 
                     let mut lower_store =
                         wasmtime::Store::new(&driver.engine, PlatformState::default());
                     let mut lower_linker = wasmtime::Linker::new(&driver.engine);
-                    platform.bind(&mut lower_linker)?;
+                    platform.bind(&mut lower_linker, event_channel.clone())?;
                     wasi_common::sync::add_to_linker(&mut lower_linker, |state| &mut state.wasi)?;
 
-                    let driver_module = driver
+                    let driver_list = driver
                         .drivers
                         .read()
                         .map_err(|_| anyhow::anyhow!("lock failed"))?;
 
-                    let driver_module = driver_module
-                        .get(&driver_name)
+                    let driver_info = DriverInfo {
+                        name: driver_name,
+                        version: driver_version,
+                    };
+
+                    let driver_module = driver_list
+                        .get(&driver_info)
                         .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
 
                     let lower_instance =
@@ -144,15 +198,26 @@ impl Binding<State> for (DriverRuntime, Platform) {
 
                     done_caller.call(&mut lower_store, loaded_input)?;
 
-                    caller.data_mut().descriptors.remove(key.into_str());
+                    caller.data_mut().descriptors.remove(key.clone().into_str());
                 }
             }
+
+            event_channel.send(Event {
+                loc: crate::runtime::types::Loc::End,
+                event_type: crate::runtime::types::EventType::Info,
+                level: crate::runtime::types::Level::Driver,
+                call_type: crate::runtime::types::CallType::Done,
+                data: json!({
+                    "key": key.into_str(),
+                }),
+            })?;
 
             Ok(())
         };
 
         let driver = self.0.clone();
         let platform = self.1.clone();
+        let event_channel = event_bridge.clone();
 
         // this will transfer the asset
         // this will transfer the asset from one descriptor to another
@@ -172,6 +237,18 @@ impl Binding<State> for (DriverRuntime, Platform) {
             let ad2 = WasmString::from_caller(&mut caller, (ad2_ptr, ad2_len))?;
             let data = WasmString::from_caller(&mut caller, (data_ptr, data_len))?;
 
+            event_channel.send(Event {
+                loc: crate::runtime::types::Loc::Start,
+                event_type: crate::runtime::types::EventType::Info,
+                level: crate::runtime::types::Level::Driver,
+                call_type: crate::runtime::types::CallType::Transfer,
+                data: json!({
+                    "from": ad1.clone().into_str(),
+                    "to": ad2.clone().into_str(),
+                    "data": data.clone().into_str(),
+                }),
+            })?;
+
             tracing::info!(from_desc = ?ad1, to_desc = ?ad2, data = ?data, "transfer");
 
             let descriptors = caller
@@ -185,23 +262,33 @@ impl Binding<State> for (DriverRuntime, Platform) {
                 None => anyhow::bail!("Descriptor not found"),
             };
 
-            ensure!(desc1.driver_name == desc2.driver_name, "driver mismatch");
+            ensure!(
+                desc1.driver_name == desc2.driver_name
+                    && desc1.driver_version == desc2.driver_version,
+                "driver mismatch"
+            );
             tracing::info!(from_driver = %desc1.driver_name, to_driver = %desc2.driver_name, "transfer");
 
             let driver_name = desc1.driver_name.clone();
+            let driver_version = desc1.driver_version.clone();
 
             let mut lower_store = wasmtime::Store::new(&driver.engine, PlatformState::default());
             let mut lower_linker = wasmtime::Linker::new(&driver.engine);
-            platform.bind(&mut lower_linker)?;
+            platform.bind(&mut lower_linker, event_channel.clone())?;
             wasi_common::sync::add_to_linker(&mut lower_linker, |state| &mut state.wasi)?;
 
-            let driver_module = driver
+            let driver_list = driver
                 .drivers
                 .read()
                 .map_err(|_| anyhow::anyhow!("lock failed"))?;
 
-            let driver_module = driver_module
-                .get(&driver_name)
+            let driver_info = DriverInfo {
+                name: driver_name,
+                version: driver_version,
+            };
+
+            let driver_module = driver_list
+                .get(&driver_info)
                 .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
 
             let lower_instance = lower_linker.instantiate(&mut lower_store, driver_module)?;
@@ -239,11 +326,24 @@ impl Binding<State> for (DriverRuntime, Platform) {
             tracing::info!(from = %input1, to = %input2, data = %data, "transfer");
             transfer_caller.call(&mut lower_store, loaded_input)?;
 
+            event_channel.send(Event {
+                loc: crate::runtime::types::Loc::End,
+                event_type: crate::runtime::types::EventType::Info,
+                level: crate::runtime::types::Level::Driver,
+                call_type: crate::runtime::types::CallType::Transfer,
+                data: json!({
+                    "from": ad1.into_str(),
+                    "to": ad2.into_str(),
+                    "data": data,
+                }),
+            })?;
+
             Ok(())
         };
 
         let driver = self.0.clone();
         let platform = self.1.clone();
+        let event_channel = event_bridge.clone();
 
         let view = move |mut caller: wasmtime::Caller<'_, State>, desc_key: i32, desc_len: i32| {
             tracing::info!(system = "driver", func = "view", "syscall");
@@ -258,21 +358,37 @@ impl Binding<State> for (DriverRuntime, Platform) {
                 .get(desc.clone().into_str())
                 .ok_or_else(|| anyhow::anyhow!("Descriptor not found"))?;
 
+            event_channel.send(Event {
+                loc: crate::runtime::types::Loc::Start,
+                event_type: crate::runtime::types::EventType::Info,
+                level: crate::runtime::types::Level::Driver,
+                call_type: crate::runtime::types::CallType::View,
+                data: json!({
+                    "key": desc.into_str(),
+                }),
+            })?;
+
             let driver_name = descriptor.driver_name.clone();
+            let driver_version = descriptor.driver_version.clone();
             let account_info = descriptor.account_info.clone();
 
             let mut lower_store = wasmtime::Store::new(&driver.engine, PlatformState::default());
             let mut lower_linker = wasmtime::Linker::new(&driver.engine);
-            platform.bind(&mut lower_linker)?;
+            platform.bind(&mut lower_linker, event_channel.clone())?;
             wasi_common::sync::add_to_linker(&mut lower_linker, |state| &mut state.wasi)?;
 
-            let driver_module = driver
+            let driver_list = driver
                 .drivers
                 .read()
                 .map_err(|_| anyhow::anyhow!("lock failed"))?;
 
-            let driver_module = driver_module
-                .get(&driver_name)
+            let driver_info = DriverInfo {
+                name: driver_name,
+                version: driver_version,
+            };
+
+            let driver_module = driver_list
+                .get(&driver_info)
                 .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
 
             let lower_instance = lower_linker.instantiate(&mut lower_store, driver_module)?;
@@ -299,6 +415,16 @@ impl Binding<State> for (DriverRuntime, Platform) {
                 .ok_or_else(|| anyhow::anyhow!("No memory"))?;
 
             let loaded_str = WasmString::new(output.into_str());
+
+            event_channel.send(Event {
+                loc: crate::runtime::types::Loc::End,
+                event_type: crate::runtime::types::EventType::Info,
+                level: crate::runtime::types::Level::Driver,
+                call_type: crate::runtime::types::CallType::View,
+                data: json!({
+                    "value": loaded_str.clone().into_str(),
+                }),
+            })?;
 
             loaded_str.allocate_on_caller(&memory, &mut caller)
         };

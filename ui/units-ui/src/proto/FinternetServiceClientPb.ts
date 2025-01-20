@@ -298,3 +298,67 @@ export class ExecutionClient {
 
 }
 
+export class DriverDetailsClient {
+  client_: grpcWeb.AbstractClientBase;
+  hostname_: string;
+  credentials_: null | { [index: string]: string; };
+  options_: null | { [index: string]: any; };
+
+  constructor (hostname: string,
+               credentials?: null | { [index: string]: string; },
+               options?: null | { [index: string]: any; }) {
+    if (!options) options = {};
+    if (!credentials) credentials = {};
+    options['format'] = 'text';
+
+    this.client_ = new grpcWeb.GrpcWebClientBase(options);
+    this.hostname_ = hostname.replace(/\/+$/, '');
+    this.credentials_ = credentials;
+    this.options_ = options;
+  }
+
+  methodDescriptorSendDetails = new grpcWeb.MethodDescriptor(
+    '/finternet.DriverDetails/SendDetails',
+    grpcWeb.MethodType.UNARY,
+    finternet_pb.DriverDetailsRequest,
+    finternet_pb.DriverDetailsResponse,
+    (request: finternet_pb.DriverDetailsRequest) => {
+      return request.serializeBinary();
+    },
+    finternet_pb.DriverDetailsResponse.deserializeBinary
+  );
+
+  sendDetails(
+    request: finternet_pb.DriverDetailsRequest,
+    metadata?: grpcWeb.Metadata | null): Promise<finternet_pb.DriverDetailsResponse>;
+
+  sendDetails(
+    request: finternet_pb.DriverDetailsRequest,
+    metadata: grpcWeb.Metadata | null,
+    callback: (err: grpcWeb.RpcError,
+               response: finternet_pb.DriverDetailsResponse) => void): grpcWeb.ClientReadableStream<finternet_pb.DriverDetailsResponse>;
+
+  sendDetails(
+    request: finternet_pb.DriverDetailsRequest,
+    metadata?: grpcWeb.Metadata | null,
+    callback?: (err: grpcWeb.RpcError,
+               response: finternet_pb.DriverDetailsResponse) => void) {
+    if (callback !== undefined) {
+      return this.client_.rpcCall(
+        this.hostname_ +
+          '/finternet.DriverDetails/SendDetails',
+        request,
+        metadata || {},
+        this.methodDescriptorSendDetails,
+        callback);
+    }
+    return this.client_.unaryCall(
+    this.hostname_ +
+      '/finternet.DriverDetails/SendDetails',
+    request,
+    metadata || {},
+    this.methodDescriptorSendDetails);
+  }
+
+}
+

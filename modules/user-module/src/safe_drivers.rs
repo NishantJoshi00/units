@@ -46,7 +46,6 @@ pub fn safe_main(input: &str) -> &str {
     safe_done(&p1);
     safe_done(&p2);
 
-
     "done"
 }
 
@@ -59,7 +58,10 @@ pub fn safe_main(input: &str) -> &str {
 
     let p1_d = serde_json::from_str::<MoreData>(&p1_data).expect("invalid data");
 
-    let data = ViewData { path1: p1_d };
+    let data = ViewData {
+        data: p1_d,
+        path: input.path.clone(),
+    };
 
     let data = serde_json::to_string(&data).expect("invalid data");
 
@@ -70,7 +72,8 @@ pub fn safe_main(input: &str) -> &str {
 
 #[derive(serde::Serialize)]
 struct ViewData {
-    path1: MoreData,
+    path: String,
+    data: MoreData,
 }
 
 #[derive(serde::Deserialize)]
@@ -89,7 +92,6 @@ struct Input {
 struct Data {
     amount: u64,
 }
-
 
 #[derive(serde::Serialize, serde::Deserialize)]
 struct MoreData {

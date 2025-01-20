@@ -1,6 +1,6 @@
 
-import { BindRequest, LoadDriverRequest, ExecutionRequest, BinaryType } from '@/proto/finternet_pb';
-import { BindClient, DriverClient, ExecutionClient } from '@/proto/FinternetServiceClientPb';
+import { BindRequest, LoadDriverRequest, ExecutionRequest, BinaryType, DriverDetailsRequest } from '@/proto/finternet_pb';
+import { BindClient, DriverClient, DriverDetailsClient, ExecutionClient } from '@/proto/FinternetServiceClientPb';
 
 async function load_driver(
     driverName: string,
@@ -29,6 +29,7 @@ async function load_driver(
 
 async function bind(
     driverName: string,
+    driverVersion:string,
     path: string,
     accountInfo: string,
 ): Promise<string> {
@@ -37,6 +38,7 @@ async function bind(
     const request = new BindRequest();
     request
         .setDriverName(driverName)
+        .setDriverVersion(driverVersion)
         .setPath(path)
         .setAccountInfo(accountInfo);
 
@@ -70,5 +72,36 @@ async function execute(
     return JSON.stringify(response.toObject());
 }
 
+// function createDriverDetailClient() {
+//     return new DriverDetailsClient(API_DOMAIN, null, null)
+// }
 
-export { load_driver, bind, execute };
+// export const getDriverList = () => {
+//     return new Promise((resolve, reject)=>{
+//         const driverDetailsClient = createDriverDetailClient()
+//         const request = new DriverDetailsRequest()
+//         driverDetailsClient.sendDetails(request, {}, (err, response) => {
+//             if(err) {
+//                 reject(err);
+//                 return
+//             }
+//             resolve(response.toObject())
+//         })
+//     })
+// }
+
+async function createDriverDetailClient(){
+    const client = new DriverDetailsClient("http://localhost:8080");
+
+    const request = new DriverDetailsRequest();
+
+    const response = await client.sendDetails(request,{});
+
+    await new Promise(resolve => setTimeout(resolve, 1000)) // 1 second delay
+    return JSON.stringify(response.toObject());
+
+}
+
+
+
+export { load_driver, bind, execute ,createDriverDetailClient};

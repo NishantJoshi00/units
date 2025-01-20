@@ -42,3 +42,43 @@ pub struct ProcessConfig {}
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct PlatformConfig {}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct Event {
+    pub loc: Loc,
+    pub event_type: EventType,
+    pub level: Level,
+    pub call_type: CallType,
+    pub data: serde_json::Value,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub enum Level {
+    Platform,
+    Driver,
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub enum CallType {
+    Intend,
+    Done,
+    Transfer,
+    View,
+    Set,
+    Get,
+}
+
+#[derive(Debug, Clone, serde::Deserialize, Default)]
+pub enum EventType {
+    #[default]
+    Info,
+    Error,
+}
+
+#[derive(Debug, Clone, serde::Deserialize, Default)]
+pub enum Loc {
+    Start,
+    #[default]
+    Event,
+    End,
+}

@@ -1,4 +1,4 @@
-// source: finternet.proto
+// source: service.proto
 /**
  * @fileoverview
  * @enhanceable
@@ -512,10 +512,10 @@ proto.finternet.LoadDriverRequest.prototype.setDriverType = function(value) {
 
 /**
  * optional bytes driver_binary = 4;
- * @return {string}
+ * @return {!(string|Uint8Array)}
  */
 proto.finternet.LoadDriverRequest.prototype.getDriverBinary = function() {
-  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 4, ""));
+  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldWithDefault(this, 4, ""));
 };
 
 
@@ -2026,10 +2026,10 @@ proto.finternet.ExecutionRequest.prototype.setType = function(value) {
 
 /**
  * optional bytes binary = 5;
- * @return {string}
+ * @return {!(string|Uint8Array)}
  */
 proto.finternet.ExecutionRequest.prototype.getBinary = function() {
-  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 5, ""));
+  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldWithDefault(this, 5, ""));
 };
 
 
