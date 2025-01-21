@@ -21,7 +21,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
     ///   transaction.
     /// - `done`: This function is called to finalize the intent and perform the transaction.
     ///
-    fn bind(self, linker: &mut wasmtime::Linker<State>) -> anyhow::Result<()> {
+    fn bind(self, linker: &mut wasmtime::component::Linker<State>) -> anyhow::Result<()> {
         let driver = self.0.clone();
         let platform = self.1.clone();
 
@@ -48,7 +48,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
                 .ok_or_else(|| anyhow::anyhow!("Path not found"))?;
 
             let mut lower_store = wasmtime::Store::new(&driver.engine, PlatformState::default());
-            let mut lower_linker = wasmtime::Linker::new(&driver.engine);
+            let mut lower_linker = wasmtime::component::Linker::new(&driver.engine);
             platform.bind(&mut lower_linker)?;
             wasi_common::sync::add_to_linker(&mut lower_linker, |state| &mut state.wasi)?;
 
@@ -62,11 +62,11 @@ impl Binding<State> for (DriverRuntime, Platform) {
                 version: path_info.driver_version.clone(),
             };
 
-            let driver_module = driver_list
+            let driver_component = driver_list
                 .get(&driver_info)
                 .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
 
-            let lower_instance = lower_linker.instantiate(&mut lower_store, driver_module)?;
+            let lower_instance = lower_linker.instantiate(&mut lower_store, driver_component)?;
             let lower_memory = lower_instance
                 .get_memory(&mut lower_store, "memory")
                 .ok_or_else(|| anyhow::anyhow!("No memory"))?;
@@ -123,7 +123,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
 
                     let mut lower_store =
                         wasmtime::Store::new(&driver.engine, PlatformState::default());
-                    let mut lower_linker = wasmtime::Linker::new(&driver.engine);
+                    let mut lower_linker = wasmtime::component::Linker::new(&driver.engine);
                     platform.bind(&mut lower_linker)?;
                     wasi_common::sync::add_to_linker(&mut lower_linker, |state| &mut state.wasi)?;
 
@@ -137,12 +137,12 @@ impl Binding<State> for (DriverRuntime, Platform) {
                         version: driver_version,
                     };
 
-                    let driver_module = driver_list
+                    let driver_component = driver_list
                         .get(&driver_info)
                         .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
 
                     let lower_instance =
-                        lower_linker.instantiate(&mut lower_store, driver_module)?;
+                        lower_linker.instantiate(&mut lower_store, driver_component)?;
 
                     let lower_memory = lower_instance
                         .get_memory(&mut lower_store, "memory")
@@ -210,7 +210,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
             let driver_version = desc1.driver_version.clone();
 
             let mut lower_store = wasmtime::Store::new(&driver.engine, PlatformState::default());
-            let mut lower_linker = wasmtime::Linker::new(&driver.engine);
+            let mut lower_linker = wasmtime::component::Linker::new(&driver.engine);
             platform.bind(&mut lower_linker)?;
             wasi_common::sync::add_to_linker(&mut lower_linker, |state| &mut state.wasi)?;
 
@@ -224,11 +224,11 @@ impl Binding<State> for (DriverRuntime, Platform) {
                 version: driver_version,
             };
 
-            let driver_module = driver_list
+            let driver_component = driver_list
                 .get(&driver_info)
                 .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
 
-            let lower_instance = lower_linker.instantiate(&mut lower_store, driver_module)?;
+            let lower_instance = lower_linker.instantiate(&mut lower_store, driver_component)?;
 
             let lower_memory = lower_instance
                 .get_memory(&mut lower_store, "memory")
@@ -287,7 +287,7 @@ impl Binding<State> for (DriverRuntime, Platform) {
             let account_info = descriptor.account_info.clone();
 
             let mut lower_store = wasmtime::Store::new(&driver.engine, PlatformState::default());
-            let mut lower_linker = wasmtime::Linker::new(&driver.engine);
+            let mut lower_linker = wasmtime::component::Linker::new(&driver.engine);
             platform.bind(&mut lower_linker)?;
             wasi_common::sync::add_to_linker(&mut lower_linker, |state| &mut state.wasi)?;
 
@@ -301,11 +301,11 @@ impl Binding<State> for (DriverRuntime, Platform) {
                 version: driver_version,
             };
 
-            let driver_module = driver_list
+            let driver_component = driver_list
                 .get(&driver_info)
                 .ok_or_else(|| anyhow::anyhow!("Driver not found"))?;
 
-            let lower_instance = lower_linker.instantiate(&mut lower_store, driver_module)?;
+            let lower_instance = lower_linker.instantiate(&mut lower_store, driver_component)?;
 
             let lower_memory = lower_instance
                 .get_memory(&mut lower_store, "memory")

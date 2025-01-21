@@ -40,16 +40,16 @@ impl Runtime {
         })
     }
 
-    pub fn exec(self, module: wasmtime::Module, input: String) -> anyhow::Result<String> {
+    pub fn exec(self, component:wasmtime::component::Component, input: String) -> anyhow::Result<String> {
         let mut store = wasmtime::Store::new(
             &self.process_layer.engine,
             binding::State::new(self.driver_layer.resolver.clone()),
         );
-        let mut linker = wasmtime::Linker::new(&self.process_layer.engine);
+        let mut linker = wasmtime::component::Linker::new(&self.process_layer.engine);
 
         (self.driver_layer, self.platform_layer).bind(&mut linker)?;
 
-        let instance = linker.instantiate(&mut store, &module)?;
+        let instance = linker.instantiate(&mut store, &component)?;
         let memory = instance
             .get_memory(&mut store, "memory")
             .ok_or_else(|| anyhow::anyhow!("No memory"))?;

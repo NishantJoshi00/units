@@ -4,7 +4,7 @@ mod driver;
 mod platform;
 
 pub trait Binding<T> {
-    fn bind(self, linker: &mut wasmtime::Linker<T>) -> anyhow::Result<()>;
+    fn bind(self, linker: &mut wasmtime::component::Linker<T>) -> anyhow::Result<()>;
 }
 
 pub struct State {

@@ -5,7 +5,7 @@ use super::driver::PlatformState;
 use super::Binding;
 
 impl Binding<PlatformState> for Platform {
-    fn bind(self, linker: &mut wasmtime::Linker<PlatformState>) -> anyhow::Result<()> {
+    fn bind(self, linker: &mut wasmtime::component::Linker<PlatformState>) -> anyhow::Result<()> {
         let storage = self.storage.clone();
         linker.func_wrap(
             "platform",

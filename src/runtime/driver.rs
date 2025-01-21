@@ -10,6 +10,7 @@ use super::{resolver, types};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use tonic::{Status, Response};
+use wasmtime::component::Component; 
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub struct DriverInfo {
@@ -27,7 +28,7 @@ pub struct UserInfo{
 #[derive(Clone)]
 pub struct DriverRuntime {
     pub engine: wasmtime::Engine,
-    pub drivers: Arc<RwLock<HashMap<DriverInfo, wasmtime::Module>>>,
+    pub drivers: Arc<RwLock<HashMap<DriverInfo, Component>>>,
     pub user_store:Arc<RwLock<HashMap<String,UserInfo>>>,
     pub resolver: resolver::Resolver,
     pub config: super::types::DriverConfig,
@@ -52,14 +53,14 @@ impl DriverRuntime {
     pub fn add_driver(
         &self,
         name: String,
-        module: wasmtime::Module,
+        component:Component,
         version: String,
     ) -> anyhow::Result<()> {
         let driver_info = DriverInfo { name, version };
         self.drivers
             .write()
             .map_err(|e| anyhow::anyhow!("Poisoned Lock {:?}", e))?
-            .insert(driver_info, module);
+            .insert(driver_info, component);
 
         Ok(())
     }

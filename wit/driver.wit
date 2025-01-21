@@ -1,0 +1,18 @@
+package component:driver;
+
+interface storage {
+    get: func(key: string) -> string;
+    set: func(key: string, value: string);
+}
+
+interface driver {
+    intend: func(input: string) -> string;
+    done: func(input: string);
+    transfer: func(fro: string, to: string, value: string);
+    view: func(input: string) -> string;
+}
+
+world driver-world {
+    import storage;
+    export driver;
+}

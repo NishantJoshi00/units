@@ -3,7 +3,6 @@ use tonic::metadata::MetadataValue;
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Serialize, Deserialize};
 use std::time::{SystemTime, UNIX_EPOCH};
-
 use crate::runtime::driver::DriverInfo;
 use crate::runtime::resolver::PathInfo;
 use crate::service::proto_types::BinaryType;
@@ -61,13 +60,14 @@ fn execte(
     runtime: Runtime,
     request: types::ExecutionRequest,
 ) -> anyhow::Result<types::ExecutionResponse> {
-    let module = match request.r#type() {
-        BinaryType::Wat | BinaryType::Wasm => {
-            wasmtime::Module::new(&runtime.process_layer.engine, request.binary)?
-        }
-    };
+    let component = match request.r#type() {
+            BinaryType::Wat | BinaryType::Wasm => {
+                wasmtime::component::Component::new(&runtime.driver_layer.engine, request.binary)
+                    .map_err(|e| tonic::Status::internal(e.to_string()))?
+            }
+        };
 
-    let output = runtime.exec(module, request.input)?;
+    let output = runtime.exec(component, request.input)?;
 
     Ok(types::ExecutionResponse { output })
 }
@@ -157,19 +157,19 @@ impl server_traits::Driver for super::Runtime {
 
         tracing::info!(name = %request.driver_name,version=%request.driver_version, "Adding driver");
 
-        let module = match request.driver_type() {
+        let component = match request.driver_type() {
             BinaryType::Wat | BinaryType::Wasm => {
-                wasmtime::Module::new(&self.driver_layer.engine, request.driver_binary)
+                wasmtime::component::Component::new(&self.driver_layer.engine, request.driver_binary)
                     .map_err(|e| tonic::Status::internal(e.to_string()))?
             }
         };
 
-        tracing::info!(name = ?module.name(), "Module Created");
+        // tracing::info!(name = ?component, " Created");
 
         self.driver_layer
             .add_driver(
                 request.driver_name.clone(),
-                module,
+                component,
                 request.driver_version.clone(),
             )
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
