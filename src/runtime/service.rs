@@ -1,4 +1,8 @@
-use tonic::{Request, Response};
+use tonic::{Request,Status, Response};
+use tonic::metadata::MetadataValue;
+use jsonwebtoken::{encode, EncodingKey, Header};
+use serde::{Serialize, Deserialize};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::runtime::driver::DriverInfo;
 use crate::runtime::resolver::PathInfo;
@@ -7,12 +11,21 @@ use crate::service::proto_types::DriverDetail;
 
 use super::Runtime;
 
+#[derive(Debug, Serialize, Deserialize)]
+struct Claims {
+    username: String, 
+    exp: usize,   
+    iat: usize,   
+}
+
 mod server_traits {
     pub use crate::service::proto_types::{
         bind_server::Bind,
-        driver_details_server::DriverDetails, // for driver details
+        driver_details_server::DriverDetails, 
         driver_server::Driver,
         execution_server::Execution,
+        user_sign_up_server::UserSignUp,
+        user_login_server::UserLogin,
     };
 }
 
@@ -23,6 +36,8 @@ mod types {
     pub use crate::service::proto_types::{LoadDriverRequest, LoadDriverResponse};
     pub use crate::service::proto_types::{UnbindRequest, UnbindResponse};
     pub use crate::service::proto_types::{UnloadDriverRequest, UnloadDriverResponse};
+    pub use crate::service::proto_types::{SignUpRequest,SignUpResponse};
+    pub use crate::service::proto_types::{LoginRequest,LoginResponse};
     //for sending all driver details
 }
 
@@ -215,5 +230,99 @@ impl server_traits::DriverDetails for super::Runtime {
             message,
             driver_data: all_driver_details,
         }))
+    }
+}
+
+#[tonic::async_trait]
+impl server_traits::UserSignUp for super::Runtime {
+    async fn sign_up(
+        &self,
+        request: Request<types::SignUpRequest>,
+    ) -> Result<Response<types::SignUpResponse>, tonic::Status> {
+        let request = request.into_inner();
+        self.driver_layer
+            .add_user(
+                request.username.clone(),
+                request.name.clone(),
+                request.password.clone(),
+                request.email.clone(),
+            )
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+        let message=format!("{} has signed up successfully",request.username.clone());
+        Ok(tonic::Response::new(types::SignUpResponse {
+            message,
+        }))
+    }
+}
+
+#[tonic::async_trait]
+impl server_traits::UserLogin for super::Runtime {
+    async fn login(
+        &self,
+        request: Request<types::LoginRequest>,
+    ) -> Result<Response<types::LoginResponse>, tonic::Status> {
+        let request = request.into_inner();
+        let mut hasher = blake3::Hasher::new();
+        hasher.update(request.password.as_bytes());
+        let hash_pass = hasher.finalize();
+
+        let read_guard = self
+            .driver_layer
+            .user_store
+            .read()
+            .map_err(|_| Status::internal("Failed to lock map"))?;
+        
+        let (message, set_cookie) = match read_guard.get(&request.username) {
+            Some(user) => {
+                if hash_pass == user.password {
+                    let expiration = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs() as usize + 60; 
+
+                    let claims = Claims {
+                        username: request.username.clone(),
+                        exp: expiration,
+                        iat: SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs() as usize,
+                    };
+
+                    let secret = b"finternet";
+                    
+                    let token = encode(
+                        &Header::default(),
+                        &claims,
+                        &EncodingKey::from_secret(secret)
+                    ).map_err(|_| Status::internal("Failed to create token"))?;
+
+                    let cookie = format!(
+                        "auth_token={}; HttpOnly; Path=/; Max-Age=3600; SameSite=Strict",
+                        token
+                    );
+                    
+                    (
+                        format!("{} has logged in successfully", request.username),
+                        Some(cookie)
+                    )
+                } else {
+                    (String::from("Password is incorrect"), None)
+                }
+            }
+            None => (String::from("User not found"), None),
+        };
+
+        let mut response = Response::new(types::LoginResponse { message });
+        
+        if let Some(cookie_value) = set_cookie {
+            response.metadata_mut().insert(
+                "set-cookie",
+                MetadataValue::try_from(&cookie_value)
+                    .map_err(|_| Status::internal("Failed to create cookie metadata"))?
+            );
+        }
+
+        Ok(response)
     }
 }
