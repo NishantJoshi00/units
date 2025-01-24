@@ -1,0 +1,13 @@
+package components:units@0.1.0;
+
+world module-world {
+    variant user-error {
+        permission-denied(string),
+        system-error(string),
+        invalid-input(string), 
+        failure(string),
+        unknown-error(string)
+    }
+    import driver;
+    export main: func(input: string) -> result<string, user-error>;
+}

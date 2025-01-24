@@ -1,4 +1,4 @@
-use units::runtime;
+use units::runtime_v2;
 use units::server;
 
 #[tokio::main]
@@ -8,10 +8,10 @@ async fn main() -> anyhow::Result<()> {
     let config_path = std::env::args().nth(1);
     let config_path = config_path.ok_or(anyhow::anyhow!("config path is required"))?;
 
-    let config = runtime::types::Config::from_path(config_path.into())?;
+    let config = runtime_v2::RuntimeConfig::from_path(config_path.into())?;
     let server_config = config.server.clone();
 
-    let runtime = runtime::Runtime::init(config)?;
+    let runtime = runtime_v2::Runtime::init(config)?;
 
     let grpc_server = server::Server::init(runtime)?;
 

@@ -36,7 +36,7 @@ impl Runtime {
     pub fn init(config: types::Config) -> anyhow::Result<Self> {
         tracing::debug!("Initializing runtime");
 
-        let (tx, rx) = mpsc::channel();
+        let (tx, _rx) = mpsc::channel();
 
         Ok(Self {
             process_layer: process::ProcessRuntime::init(config.process)?,

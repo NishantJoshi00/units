@@ -5,18 +5,18 @@ use tokio::signal::unix::{signal, SignalKind};
 use tonic_web::GrpcWebLayer;
 use tower_http::cors::CorsLayer;
 
-use crate::runtime;
+use crate::runtime_v2;
 
 pub struct Server {
-    runtime: runtime::Runtime,
+    runtime: runtime_v2::Runtime,
 }
 
 impl Server {
-    pub fn init(runtime: runtime::Runtime) -> anyhow::Result<Self> {
+    pub fn init(runtime: runtime_v2::Runtime) -> anyhow::Result<Self> {
         Ok(Self { runtime })
     }
 
-    pub async fn start(self, config: runtime::types::ServerConfig) -> anyhow::Result<()> {
+    pub async fn start(self, config: runtime_v2::types::ServerConfig) -> anyhow::Result<()> {
         let socket_addr = std::net::SocketAddr::new(config.host.parse()?, config.port);
 
         tracing::info!(?socket_addr, "Starting server");

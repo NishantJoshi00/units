@@ -1,0 +1,14 @@
+package components:units@0.1.0;
+
+interface driver {
+    variant driver-error {
+        permission-denied(string),
+        system-error(string), 
+        invalid-input(string),
+        unknown-error(string)
+    }
+    intend: func(input: string) -> result<string, driver-error>;
+    done: func(input: string) -> result<_, driver-error>;
+    transfer: func(fro: string, to: string, value: string) -> result<_, driver-error>; 
+    view: func(input: string) -> result<string, driver-error>;
+}
