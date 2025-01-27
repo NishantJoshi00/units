@@ -1,67 +1,71 @@
-# Finternet (UNITS)
+# Finternet Runtime
 
-A WebAssembly-powered financial transaction processing system with a layered architecture designed for secure, extensible asset management.
+A modular and extensible runtime system for executing WebAssembly components with a focus on financial transactions and asset management.
 
-## Architecture
+## Overview
 
-Finternet implements a three-tier "burger" architecture:
+Finternet Runtime is a three-tier architecture system that provides:
 
-1. **Process Layer**: User interaction layer for executing workflows (WebAssembly modules). Users interact with assets through the Virtual Asset Layer (VAL), which provides access to driver layer functions.
-
-2. **Driver Layer**: Intermediary between platform and process layers. Gives data meaning and handles user context with permissioned access. Drivers are dynamically loaded/unloaded at runtime.
-
-3. **Platform Layer**: Base layer providing low-level component abstractions exposed to the driver runtime. Handles storage, networking, and runtime services.
+1. **Process Layer**: Direct user interaction layer for executing workflows (WebAssembly modules)
+2. **Driver Layer**: Intermediary layer providing abstraction over platform-specific operations
+3. **Platform Layer**: Low-level system access and services integration
 
 ## Features
 
-- Dynamic WebAssembly module loading for drivers and user processes
-- GRPC API with web interface support
-- Redis-backed storage system
-- Comprehensive permission and context management
-- Support for custom asset types through driver system
+- WebAssembly Component Model support
+- Dynamic driver loading/unloading
+- Pluggable storage backends (Redis, in-memory)
+- Solana blockchain integration
+- gRPC/gRPC-Web API interface
+- Built-in health checks and metrics
+- WASI support
 
-## User Interface
+## Architecture
 
-For detailed UI documentation and setup instructions, see [UI Documentation](ui/units-ui/README.md).
+The system follows a "burger architecture" with three main layers:
 
-The Finternet system includes a modern web interface built with Next.js and Tailwind CSS, providing:
+```
+┌─────────────────────────┐
+│     Process Layer       │ User workflows & WebAssembly modules
+├─────────────────────────┤
+│     Driver Layer        │ Asset abstraction & permissions
+├─────────────────────────┤
+│     Platform Layer      │ Low-level services & storage
+└─────────────────────────┘
+```
 
-### Core Features
-- WebAssembly Module Management: Interface for loading and managing token handlers
-- Account Management: User onboarding and account binding workflows
-- Transaction Execution: Visual interface for executing WebAssembly programs
-- Real-time Status Updates: Live monitoring of transaction and system status
+### Process Layer
+- Executes user workflows as WebAssembly modules
+- Provides Virtual Asset Layer (VAL) for accessing driver functions
+- Manages workflow lifecycle and execution context
 
-### Technical Implementation
-- Built on Next.js App Router architecture
-- Responsive design using Tailwind CSS and shadcn/ui components
-- Type-safe gRPC-web communication with the backend
-- Dark/light theme support with consistent design system
-- Component hierarchy:
-  - UI primitives (buttons, inputs, dialogs)
-  - Feature components (module loader, transaction forms)
-  - Layout components (navigation, dashboard)
+### Driver Layer
+- Dynamically loaded modules providing asset abstractions
+- Manages permissions and access control
+- Implements VAL functions for workflow interaction
+- Supports hot-loading of new drivers
 
-### Integration Points
-- Connects to core services via gRPC:
-  - Driver Service: Token handler management
-  - Bind Service: User onboarding
-  - Execution Service: WebAssembly program execution
-- Real-time updates using server-sent events
-- Secure authentication and session management
+### Platform Layer
+- Provides core system services
+- Manages storage backends (Redis/in-memory)
+- Handles blockchain integration
+- Implements low-level platform operations
 
-## Prerequisites
+## Getting Started
 
-- Rust toolchain
-- Redis server
+### Prerequisites
+
+- Rust 1.75 or later
+- Cargo
 - Protocol Buffers compiler
-- WebAssembly target support (`wasm32-unknown-unknown`)
+- Redis (optional)
 
-## Installation
+### Building
 
-1. Add WebAssembly target:
+1. Clone the repository:
 ```bash
-rustup target add wasm32-unknown-unknown
+git clone https://github.com/yourusername/finternet-runtime.git
+cd finternet-runtime
 ```
 
 2. Build the project:
@@ -69,91 +73,63 @@ rustup target add wasm32-unknown-unknown
 cargo build --release
 ```
 
-## Usage
+### Configuration
 
-### Starting the Server
+Create a configuration file (`development.toml`):
 
-```bash
-cargo run --bin server -- config/development.toml
+```toml
+[server]
+host = "127.0.0.1"
+port = 8080
+
+[runtime]
+name = "finternet"
+version = "0.1.0"
+
+[driver]
+driver_limit = 100
+driver_timeout = 200
+
+[process]
+[platform]
 ```
 
-### Loading a Driver
+### Running
+
+Start the server:
 
 ```bash
-cd modules/driver
-make build
-./load-driver.sh
+cargo run --release -- config/development.toml
 ```
 
-### Binding Assets
+### Creating Components
+
+The system supports two types of components: drivers and programs. We provide scripts to easily create new components with the correct structure and WIT interfaces.
+
+#### Creating a Driver
+
+To create a new driver, use the `create-driver.sh` script followed by the driver name (lowercase only):
 
 ```bash
-./bind1.sh  # Bind first account
-./bind2.sh  # Bind second account
+./create-driver.sh my-driver
 ```
 
-### Executing Workflows
+This will:
+1. Create a new component driver in `modules/drivers/component-my-driver`
+2. Copy the necessary WIT interface files
+3. Set up the initial project structure
+
+#### Creating a Program
+
+To create a new program, use the `create-program.sh` script followed by the program name (lowercase only):
 
 ```bash
-cd modules/user-module
-make build
-./exec.sh
+./create-program.sh my-program
 ```
 
-## Project Structure
+This will:
+1. Create a new component program in `modules/programs/component-my-program`
+2. Copy the necessary WIT interface files
+3. Set up the initial project structure
 
-- `src/`: Core server implementation
-  - `runtime/`: Main runtime implementation
-  - `service/`: GRPC service definitions
-  - `types/`: Core type definitions
-  
-- `modules/`: WebAssembly modules
-  - `driver/`: Example driver implementation
-  - `user-module/`: Example user workflow
-
-- `proto/`: Protocol buffer definitions
-  - `service.proto`: Main service definitions
-  - `health_check.proto`: Health check service
-
-- `config/`: Configuration files
-  - `development.toml`: Development configuration
-
-## Configuration
-
-Configuration is handled through TOML files with the following sections:
-
-- `server`: HTTP server settings
-- `runtime`: Runtime name and version
-- `driver`: Driver limits and timeouts
-- `process`: Process-related settings
-- `platform`: Platform-specific settings
-
-## Development
-
-### Building Modules
-
-Drivers and user modules are built with:
-
-```bash
-RUSTFLAGS="-C target-feature=+multivalue" cargo build --target wasm32-unknown-unknown --release
-```
-
-### Adding New Drivers
-
-1. Implement the required driver interface functions:
-   - `intend`
-   - `done`
-   - `transfer`
-   - `view`
-
-2. Compile to WebAssembly
-
-3. Load using the Driver service API
-
-## Testing
-
-Run the test suite with:
-
-```bash
-cargo test
-```
+Note: Both driver and program names must be lowercase and cannot contain spaces.
