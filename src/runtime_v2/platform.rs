@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 
-use crate::runtime::integration;
+use crate::runtime_v2::integration;
 
 use super::types;
 

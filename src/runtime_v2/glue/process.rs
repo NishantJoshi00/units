@@ -1,7 +1,7 @@
 use crate::runtime_v2::driver::DriverInfo;
 use crate::runtime_v2::types;
-use crate::runtime_v2::types::component::module::components::units;
-use crate::runtime_v2::types::component::module::components::units::driver::DriverError;
+use crate::runtime_v2::types::component::module::component::units;
+use crate::runtime_v2::types::component::module::component::units::driver::DriverError;
 
 impl units::driver::Host for types::ProcessState {
     fn intend(&mut self, input: String) -> Result<String, DriverError> {
@@ -24,7 +24,7 @@ impl units::driver::Host for types::ProcessState {
                 })?;
 
         let result = instance
-            .components_units_driver()
+            .component_units_driver()
             .call_intend(state, &account_info)
             .map_err(|_| DriverError::SystemError("Failed while calling intend".to_string()))?
             .map_err(|_| DriverError::SystemError("Failed while calling intend".to_string()))?;
@@ -72,7 +72,7 @@ impl units::driver::Host for types::ProcessState {
                 })?;
 
         instance
-            .components_units_driver()
+            .component_units_driver()
             .call_done(state, &account_info)
             .map_err(|_| DriverError::SystemError("Failed while calling done".to_string()))?
             .map_err(|_| DriverError::SystemError("Failed while calling done".to_string()))?;
@@ -111,7 +111,7 @@ impl units::driver::Host for types::ProcessState {
                 })?;
 
         instance
-            .components_units_driver()
+            .component_units_driver()
             .call_transfer(state, &acc_1, &acc_2, &value)
             .map_err(|_| DriverError::SystemError("Failed while calling transfer".to_string()))?
             .map_err(|_| DriverError::SystemError("Failed while calling transfer".to_string()))?;
@@ -141,7 +141,7 @@ impl units::driver::Host for types::ProcessState {
                 })?;
 
         let result = instance
-            .components_units_driver()
+            .component_units_driver()
             .call_view(state, &account_info)
             .map_err(|_| DriverError::SystemError("Failed while calling view".to_string()))?
             .map_err(|_| DriverError::SystemError("Failed while calling view".to_string()))?;

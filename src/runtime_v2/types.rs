@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::sync::{mpsc, Arc};
 
+use wasmtime_wasi::preview1::WasiP1Ctx;
+
 use super::driver::{self, DriverInfo};
 use super::platform::Platform;
 
@@ -8,14 +10,16 @@ pub mod component {
     pub mod driver {
         wasmtime::component::bindgen!({
             world: "driver-world",
-            path: "wit"
+            path: "wit",
+            tracing: true,
         });
     }
 
     pub mod module {
         wasmtime::component::bindgen!({
             world: "module-world",
-            path: "wit"
+            path: "wit",
+            tracing: true,
         });
     }
 }
@@ -88,14 +92,16 @@ pub enum Loc {
     End,
 }
 
-#[derive(Clone)]
 pub struct ProcessState {
     pub ctx: UserCtx,
     pub driver_runtime: driver::DriverRuntime,
     pub platform: Platform,
     pub event_sender: Arc<mpsc::Sender<Event>>,
     pub descriptors: HashMap<String, Descriptor>,
+    pub wasi: WasiP1Ctx,
 }
+
+
 
 #[derive(Clone)]
 pub struct Descriptor {
@@ -104,12 +110,12 @@ pub struct Descriptor {
     pub account_info: serde_json::Value,
 }
 
-#[derive(Clone)]
 pub struct DriverState {
     pub ctx: UserCtx,
     pub driver_ctx: DriverCtx,
     pub platform: Platform,
     pub event_sender: Arc<mpsc::Sender<Event>>,
+    pub wasi: WasiP1Ctx,
 }
 
 impl ProcessState {
@@ -125,13 +131,14 @@ impl ProcessState {
             platform,
             event_sender,
             descriptors: HashMap::new(),
+            wasi: wasmtime_wasi::WasiCtxBuilder::new().build_p1()
         }
     }
 
     pub fn get_path_info(
         &self,
         input: String,
-    ) -> Result<super::resolver::PathInfo, component::module::components::units::driver::DriverError>
+    ) -> Result<super::resolver::PathInfo, component::module::component::units::driver::DriverError>
     {
         let path_info = self
             .driver_runtime
@@ -139,14 +146,14 @@ impl ProcessState {
             .mount_points
             .read()
             .map_err(|_| {
-                component::module::components::units::driver::DriverError::SystemError(
+                component::module::component::units::driver::DriverError::SystemError(
                     "Failed while finding path".to_string(),
                 )
             })?
             .get(input.as_str())
             .cloned()
             .ok_or(
-                component::module::components::units::driver::DriverError::InvalidInput(
+                component::module::component::units::driver::DriverError::InvalidInput(
                     "Failed while resolving path".to_string(),
                 ),
             )?;
@@ -158,16 +165,16 @@ impl ProcessState {
         input: &DriverInfo,
     ) -> Result<
         wasmtime::component::Component,
-        component::module::components::units::driver::DriverError,
+        component::module::component::units::driver::DriverError,
     > {
         let driver_list = self.driver_runtime.drivers.read().map_err(|_| {
-            component::module::components::units::driver::DriverError::SystemError(
+            component::module::component::units::driver::DriverError::SystemError(
                 "Failed while finding driver".to_string(),
             )
         })?;
 
         let driver = driver_list.get(input).ok_or(
-            component::module::components::units::driver::DriverError::InvalidInput(
+            component::module::component::units::driver::DriverError::InvalidInput(
                 "Failed while finding driver".to_string(),
             ),
         )?;
@@ -183,7 +190,7 @@ impl ProcessState {
             wasmtime::component::Linker<DriverState>,
             wasmtime::Store<DriverState>,
         ),
-        component::module::components::units::driver::DriverError,
+        component::module::component::units::driver::DriverError,
     > {
         let state = wasmtime::Store::new(
             &self.driver_runtime.engine,
@@ -199,10 +206,16 @@ impl ProcessState {
 
         component::driver::DriverWorld::add_to_linker(&mut linker, |state: &mut DriverState| state)
             .map_err(|_| {
-                component::module::components::units::driver::DriverError::SystemError(
+                component::module::component::units::driver::DriverError::SystemError(
                     "Failed while adding driver to linker".to_string(),
                 )
             })?;
+
+        wasmtime_wasi::add_to_linker_sync(&mut linker).map_err(|_| {
+            component::module::component::units::driver::DriverError::SystemError(
+                "Failed while adding WASI to linker".to_string(),
+            )
+        })?;
 
         Ok((linker, state))
     }
@@ -210,9 +223,9 @@ impl ProcessState {
     pub fn get_descriptor(
         &self,
         key: String,
-    ) -> Result<&Descriptor, component::module::components::units::driver::DriverError> {
+    ) -> Result<&Descriptor, component::module::component::units::driver::DriverError> {
         self.descriptors.get(&key).ok_or(
-            component::module::components::units::driver::DriverError::InvalidInput(
+            component::module::component::units::driver::DriverError::InvalidInput(
                 "Failed while finding descriptor".to_string(),
             ),
         )
@@ -221,9 +234,9 @@ impl ProcessState {
     pub fn delete_descriptor(
         &mut self,
         key: String,
-    ) -> Result<(), component::module::components::units::driver::DriverError> {
+    ) -> Result<(), component::module::component::units::driver::DriverError> {
         self.descriptors.remove(&key).ok_or(
-            component::module::components::units::driver::DriverError::InvalidInput(
+            component::module::component::units::driver::DriverError::InvalidInput(
                 "Failed while deleting descriptor".to_string(),
             ),
         )?;
@@ -243,7 +256,28 @@ impl DriverState {
             driver_ctx,
             platform,
             event_sender,
+            wasi: wasmtime_wasi::WasiCtxBuilder::new().build_p1(),
         }
+    }
+}
+
+impl wasmtime_wasi::WasiView for DriverState {
+    fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
+        self.wasi.table()
+    }
+
+    fn ctx(&mut self) -> &mut wasmtime_wasi::WasiCtx {
+        self.wasi.ctx()
+    }
+}
+
+impl wasmtime_wasi::WasiView for ProcessState {
+    fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
+        self.wasi.table()
+    }
+
+    fn ctx(&mut self) -> &mut wasmtime_wasi::WasiCtx {
+        self.wasi.ctx()
     }
 }
 

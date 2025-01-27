@@ -1,4 +1,4 @@
-use crate::runtime_v2::types::component::driver::components::units::storage::{Host, StorageError};
+use crate::runtime_v2::types::component::driver::component::units::storage::{Host, StorageError};
 use crate::runtime_v2::types::DriverState;
 
 impl Host for DriverState {

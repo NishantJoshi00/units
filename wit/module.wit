@@ -1,4 +1,4 @@
-package components:units@0.1.0;
+package component:units;
 
 world module-world {
     variant user-error {

@@ -13,6 +13,7 @@ pub mod process;
 pub mod resolver;
 pub mod service;
 pub mod types;
+pub mod integration;
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct RuntimeConfig {
@@ -62,17 +63,29 @@ impl Runtime {
 
         let mut linker = wasmtime::component::Linker::new(&self.process_layer.engine);
 
+        
+
         types::component::module::ModuleWorld::add_to_linker(
             &mut linker,
             |state: &mut types::ProcessState| state,
         )?;
 
+        wasmtime_wasi::add_to_linker_sync(&mut linker)?;
+
+
+
         let instance =
             types::component::module::ModuleWorld::instantiate(&mut state, &module, &linker)?;
 
-        let result = instance.call_main(state, &input)??;
+        let result = instance.call_main(state, &input)?;
 
-        Ok(result)
+        match result {
+            Ok(output) => Ok(output),
+            Err(e) => {
+                tracing::error!(?e, "Error while executing module");
+                anyhow::bail!("Error while executing module")
+            }
+        }
     }
 }
 
