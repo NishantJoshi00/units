@@ -83,6 +83,8 @@ service Execution {
   rpc Execute(ExecutionRequest) returns (ExecutionResponse);
   // Submit
   rpc Submit(SubmitProgramRequest) returns (SubmitProgramResponse);
+  // List
+  rpc List(ListProgramRequest) returns (ListProgramResponse);
 }
 
 message ExecutionRequest {
@@ -95,6 +97,19 @@ message SubmitProgramRequest {
   string name = 1;
   string version = 2;
   bytes binary = 5;
+}
+
+message ListProgramRequest {
+}
+
+message ListProgramResponse {
+  repeated Program program = 1;
+}
+
+message Program {
+    string program_id = 1;
+    string name = 2;
+    string version = 3;
 }
 
 message SubmitProgramResponse {

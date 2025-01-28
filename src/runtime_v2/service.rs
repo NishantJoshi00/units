@@ -20,6 +20,7 @@ mod types {
     pub use crate::service::proto_types::{BindRequest, BindResponse};
     pub use crate::service::proto_types::{DriverDetailsRequest, DriverDetailsResponse};
     pub use crate::service::proto_types::{ExecutionRequest, ExecutionResponse};
+    pub use crate::service::proto_types::{ListProgramRequest, ListProgramResponse, Program};
     pub use crate::service::proto_types::{ListResolverRequest, ListResolverResponse, PathMapping};
     pub use crate::service::proto_types::{LoadDriverRequest, LoadDriverResponse};
     pub use crate::service::proto_types::{SubmitProgramRequest, SubmitProgramResponse};
@@ -57,6 +58,28 @@ impl server_traits::Execution for super::Runtime {
 
         Ok(Response::new(types::SubmitProgramResponse {
             program_id: id,
+        }))
+    }
+
+    async fn list(
+        &self,
+        _request: Request<types::ListProgramRequest>,
+    ) -> Result<Response<types::ListProgramResponse>, tonic::Status> {
+        let programs = self
+            .process_layer
+            .programs
+            .read()
+            .map_err(|_| tonic::Status::internal("Failed to lock programs".to_string()))?;
+
+        Ok(Response::new(types::ListProgramResponse {
+            program: programs
+                .iter()
+                .map(|(id, program)| types::Program {
+                    program_id: id.clone(),
+                    name: program.name.clone(),
+                    version: program.version.clone(),
+                })
+                .collect(),
         }))
     }
 }
