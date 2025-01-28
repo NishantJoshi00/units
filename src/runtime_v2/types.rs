@@ -269,7 +269,7 @@ impl ProcessState {
         }
 
         // existing bind :: check
-        let output = self
+        let reader = self
             .driver_runtime
             .resolver
             .mount_points
@@ -279,8 +279,10 @@ impl ProcessState {
                     "Failed while finding path".to_string(),
                 )
             })?;
-        let output = output
-            .get(path.as_str());
+        let output = reader
+            .get(path.as_str()).cloned();
+        
+        drop(reader);
 
         match output {
             None => {
@@ -312,11 +314,7 @@ impl ProcessState {
                 let path_info = PathInfo {
                     driver_name: driver_info.name,
                     driver_version: driver_info.version,
-                    account_info: serde_json::from_str(&output).map_err(|_| {
-                        component::module::component::units::driver::DriverError::SystemError(
-                            "Failed while parsing account info".to_string(),
-                        )
-                    })?,
+                    account_info: output,
                 };
 
                 let mut writer = self
@@ -369,11 +367,7 @@ impl ProcessState {
                 let path_info = PathInfo {
                     driver_name: driver_info.name,
                     driver_version: driver_info.version,
-                    account_info: serde_json::from_str(&output).map_err(|_| {
-                        component::module::component::units::driver::DriverError::SystemError(
-                            "Failed while parsing account info".to_string(),
-                        )
-                    })?,
+                    account_info: output,
                 };
 
                 let mut writer = self
