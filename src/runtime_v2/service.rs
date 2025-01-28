@@ -3,7 +3,6 @@ use tonic::{Request, Response};
 use crate::runtime_v2::driver::DriverInfo;
 use crate::runtime_v2::types::ProcessState;
 use crate::runtime_v2::types::UserCtx;
-use crate::service::proto_types::BinaryType;
 use crate::service::proto_types::DriverDetail;
 
 use super::Runtime;
@@ -21,8 +20,10 @@ mod types {
     pub use crate::service::proto_types::{BindRequest, BindResponse};
     pub use crate::service::proto_types::{DriverDetailsRequest, DriverDetailsResponse};
     pub use crate::service::proto_types::{ExecutionRequest, ExecutionResponse};
+    pub use crate::service::proto_types::{ListProgramRequest, ListProgramResponse, Program};
     pub use crate::service::proto_types::{ListResolverRequest, ListResolverResponse, PathMapping};
     pub use crate::service::proto_types::{LoadDriverRequest, LoadDriverResponse};
+    pub use crate::service::proto_types::{SubmitProgramRequest, SubmitProgramResponse};
     pub use crate::service::proto_types::{UnbindRequest, UnbindResponse};
     pub use crate::service::proto_types::{UnloadDriverRequest, UnloadDriverResponse};
     //for sending all driver details
@@ -42,15 +43,62 @@ impl server_traits::Execution for super::Runtime {
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
         Ok(Response::new(output))
     }
+    async fn submit(
+        &self,
+        request: Request<types::SubmitProgramRequest>,
+    ) -> Result<Response<types::SubmitProgramResponse>, tonic::Status> {
+        let request = request.into_inner();
+        let component =
+            wasmtime::component::Component::new(&self.process_layer.engine, request.binary)
+                .map_err(|e| tonic::Status::internal(e.to_string()))?;
+        let id = self
+            .process_layer
+            .store_program(request.name, request.version, component)
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        Ok(Response::new(types::SubmitProgramResponse {
+            program_id: id,
+        }))
+    }
+
+    async fn list(
+        &self,
+        _request: Request<types::ListProgramRequest>,
+    ) -> Result<Response<types::ListProgramResponse>, tonic::Status> {
+        let programs = self
+            .process_layer
+            .programs
+            .read()
+            .map_err(|_| tonic::Status::internal("Failed to lock programs".to_string()))?;
+
+        Ok(Response::new(types::ListProgramResponse {
+            program: programs
+                .iter()
+                .map(|(id, program)| types::Program {
+                    program_id: id.clone(),
+                    name: program.name.clone(),
+                    version: program.version.clone(),
+                })
+                .collect(),
+        }))
+    }
 }
 
 fn execte(
     runtime: Runtime,
     request: types::ExecutionRequest,
 ) -> anyhow::Result<types::ExecutionResponse> {
-    let module = match request.r#type() {
-        BinaryType::Wat | BinaryType::Wasm => {
-            wasmtime::component::Component::new(&runtime.process_layer.engine, request.binary)?
+    let component = match (request.program_id, request.binary) {
+        (Some(program_id), None) => runtime
+            .process_layer
+            .find_program(&program_id)?
+            .map(|prog| prog.component)
+            .ok_or_else(|| anyhow::anyhow!("Program not found"))?,
+        (None, Some(binary)) => {
+            wasmtime::component::Component::new(&runtime.process_layer.engine, binary)?
+        }
+        _ => {
+            anyhow::bail!("Either program_id or binary should be provided (but not both)")
         }
     };
 
@@ -58,7 +106,7 @@ fn execte(
         super::types::UserCtx {
             user_id: "root".to_string(),
         },
-        module,
+        component,
         request.input,
     )?;
 
@@ -82,15 +130,16 @@ impl server_traits::Bind for super::Runtime {
             self.event_sender.clone(),
         );
 
-        process_state.perform_bind(
-            request.path.clone(),
-            DriverInfo {
-                name: request.driver_name.clone(),
-                version: request.driver_version.clone(),
-            },
-            request.account_info.clone(),
-        ).map_err(|e| tonic::Status::internal(e.to_string()))?;
-
+        process_state
+            .perform_bind(
+                request.path.clone(),
+                DriverInfo {
+                    name: request.driver_name.clone(),
+                    version: request.driver_version.clone(),
+                },
+                request.account_info.clone(),
+            )
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         let output = types::BindResponse {
             driver_name: request.driver_name,
@@ -163,13 +212,9 @@ impl server_traits::Driver for super::Runtime {
 
         tracing::info!(name = %request.driver_name,version=%request.driver_version, "Adding driver");
 
-        let module = match request.driver_type() {
-            BinaryType::Wat | BinaryType::Wasm => wasmtime::component::Component::new(
-                &self.driver_layer.engine,
-                request.driver_binary,
-            )
-            .map_err(|e| tonic::Status::internal(e.to_string()))?,
-        };
+        let module =
+            wasmtime::component::Component::new(&self.driver_layer.engine, request.driver_binary)
+                .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         tracing::info!(name = ?request.driver_name, "Module Created");
 

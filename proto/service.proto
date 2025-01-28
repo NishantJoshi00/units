@@ -30,13 +30,7 @@ message PathMapping {
 message LoadDriverRequest {
   string driver_name = 1;
   string driver_version = 2;
-  BinaryType driver_type = 3;
   bytes driver_binary = 4;
-}
-
-enum BinaryType {
-  WAT = 0;
-  WASM = 1;
 }
 
 message LoadDriverResponse {
@@ -87,14 +81,39 @@ message UnbindResponse {
 service Execution {
   // Execute
   rpc Execute(ExecutionRequest) returns (ExecutionResponse);
+  // Submit
+  rpc Submit(SubmitProgramRequest) returns (SubmitProgramResponse);
+  // List
+  rpc List(ListProgramRequest) returns (ListProgramResponse);
 }
 
 message ExecutionRequest {
+  string input = 3;
+  optional bytes binary = 5;
+  optional string program_id = 6;
+}
+
+message SubmitProgramRequest {
   string name = 1;
   string version = 2;
-  string input = 3;
-  BinaryType type = 4;
   bytes binary = 5;
+}
+
+message ListProgramRequest {
+}
+
+message ListProgramResponse {
+  repeated Program program = 1;
+}
+
+message Program {
+    string program_id = 1;
+    string name = 2;
+    string version = 3;
+}
+
+message SubmitProgramResponse {
+  string program_id = 1;
 }
 message ExecutionResponse { string output = 1; }
 
