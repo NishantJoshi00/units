@@ -5,6 +5,7 @@ use wasmtime_wasi::preview1::WasiP1Ctx;
 
 use super::driver::{self, DriverInfo};
 use super::platform::Platform;
+use super::resolver::PathInfo;
 
 pub mod component {
     pub mod driver {
@@ -101,8 +102,6 @@ pub struct ProcessState {
     pub wasi: WasiP1Ctx,
 }
 
-
-
 #[derive(Clone)]
 pub struct Descriptor {
     pub driver_name: String,
@@ -131,7 +130,7 @@ impl ProcessState {
             platform,
             event_sender,
             descriptors: HashMap::new(),
-            wasi: wasmtime_wasi::WasiCtxBuilder::new().build_p1()
+            wasi: wasmtime_wasi::WasiCtxBuilder::new().build_p1(),
         }
     }
 
@@ -240,6 +239,156 @@ impl ProcessState {
                 "Failed while deleting descriptor".to_string(),
             ),
         )?;
+        Ok(())
+    }
+
+    pub fn perform_bind(
+        &mut self,
+        path: String,
+        driver_info: DriverInfo,
+        input: String,
+    ) -> Result<(), component::module::component::units::driver::DriverError> {
+        // valid driver :: check
+        if self
+            .driver_runtime
+            .drivers
+            .read()
+            .map_err(|_| {
+                component::module::component::units::driver::DriverError::SystemError(
+                    "Failed while finding driver".to_string(),
+                )
+            })?
+            .get(&driver_info)
+            .is_none()
+        {
+            return Err(
+                component::module::component::units::driver::DriverError::InvalidInput(
+                    "Failed while finding driver".to_string(),
+                ),
+            );
+        }
+
+        // existing bind :: check
+        let output = self
+            .driver_runtime
+            .resolver
+            .mount_points
+            .read()
+            .map_err(|_| {
+                component::module::component::units::driver::DriverError::SystemError(
+                    "Failed while finding path".to_string(),
+                )
+            })?;
+        let output = output
+            .get(path.as_str());
+
+        match output {
+            None => {
+                let driver = self.get_driver(&driver_info)?;
+                let (linker, mut state) = self.get_lower_runtime(driver_info.clone())?;
+
+                let instance =
+                    component::driver::DriverWorld::instantiate(&mut state, &driver, &linker)
+                        .map_err(|_| {
+                            component::module::component::units::driver::DriverError::SystemError(
+                                "Failed while instantiating driver".to_string(),
+                            )
+                        })?;
+
+                let output = instance
+                    .component_units_driver()
+                    .call_bind(state, &input, None)
+                    .map_err(|_| {
+                        component::module::component::units::driver::DriverError::SystemError(
+                            "Failed while calling bind".to_string(),
+                        )
+                    })?
+                    .map_err(|_| {
+                        component::module::component::units::driver::DriverError::SystemError(
+                            "Failed while calling bind".to_string(),
+                        )
+                    })?;
+
+                let path_info = PathInfo {
+                    driver_name: driver_info.name,
+                    driver_version: driver_info.version,
+                    account_info: serde_json::from_str(&output).map_err(|_| {
+                        component::module::component::units::driver::DriverError::SystemError(
+                            "Failed while parsing account info".to_string(),
+                        )
+                    })?,
+                };
+
+                let mut writer = self
+                    .driver_runtime
+                    .resolver
+                    .mount_points
+                    .write()
+                    .map_err(|_| {
+                        component::module::component::units::driver::DriverError::SystemError(
+                            "Failed to lock mount points".to_string(),
+                        )
+                    })?;
+
+                writer.insert(path.clone(), path_info);
+            }
+            Some(existing) => {
+                if existing.driver_name != driver_info.name || existing.driver_version != driver_info.version {
+                    return Err(
+                        component::module::component::units::driver::DriverError::InvalidInput(
+                            "Invalid driver binding".to_string(),
+                        ),
+                    );
+                }
+
+                let driver = self.get_driver(&driver_info)?;
+                let (linker, mut state) = self.get_lower_runtime(driver_info.clone())?;
+
+                let instance =
+                    component::driver::DriverWorld::instantiate(&mut state, &driver, &linker)
+                        .map_err(|_| {
+                            component::module::component::units::driver::DriverError::SystemError(
+                                "Failed while instantiating driver".to_string(),
+                            )
+                        })?;
+
+                let output = instance
+                    .component_units_driver()
+                    .call_bind(state, &input, Some(&existing.account_info))
+                    .map_err(|_| {
+                        component::module::component::units::driver::DriverError::SystemError(
+                            "Failed while calling bind".to_string(),
+                        )
+                    })?
+                    .map_err(|_| {
+                        component::module::component::units::driver::DriverError::SystemError(
+                            "Failed while calling bind".to_string(),
+                        )
+                    })?;
+
+                let path_info = PathInfo {
+                    driver_name: driver_info.name,
+                    driver_version: driver_info.version,
+                    account_info: serde_json::from_str(&output).map_err(|_| {
+                        component::module::component::units::driver::DriverError::SystemError(
+                            "Failed while parsing account info".to_string(),
+                        )
+                    })?,
+                };
+
+                let mut writer = self
+                    .driver_runtime
+                    .resolver
+                    .mount_points
+                    .write()
+                    .map_err(|_| {
+                        component::module::component::units::driver::DriverError::SystemError(
+                            "Failed to lock mount points".to_string(),
+                        )
+                    })?;
+                writer.insert(path.clone(), path_info);
+            }
+        }
         Ok(())
     }
 }

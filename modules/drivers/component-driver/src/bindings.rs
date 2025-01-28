@@ -754,6 +754,129 @@ pub mod exports {
                         }
                     }
                 }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_bind_cabi<T: Guest>(
+                    arg0: *mut u8,
+                    arg1: usize,
+                    arg2: i32,
+                    arg3: *mut u8,
+                    arg4: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let len0 = arg1;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+                    let result2 = T::bind(
+                        _rt::string_lift(bytes0),
+                        match arg2 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let len1 = arg4;
+                                    let bytes1 = _rt::Vec::from_raw_parts(
+                                        arg3.cast(),
+                                        len1,
+                                        len1,
+                                    );
+                                    _rt::string_lift(bytes1)
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        },
+                    );
+                    let ptr3 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result2 {
+                        Ok(e) => {
+                            *ptr3.add(0).cast::<u8>() = (0i32) as u8;
+                            let vec4 = (e.into_bytes()).into_boxed_slice();
+                            let ptr4 = vec4.as_ptr().cast::<u8>();
+                            let len4 = vec4.len();
+                            ::core::mem::forget(vec4);
+                            *ptr3.add(8).cast::<usize>() = len4;
+                            *ptr3.add(4).cast::<*mut u8>() = ptr4.cast_mut();
+                        }
+                        Err(e) => {
+                            *ptr3.add(0).cast::<u8>() = (1i32) as u8;
+                            match e {
+                                DriverError::PermissionDenied(e) => {
+                                    *ptr3.add(4).cast::<u8>() = (0i32) as u8;
+                                    let vec5 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr5 = vec5.as_ptr().cast::<u8>();
+                                    let len5 = vec5.len();
+                                    ::core::mem::forget(vec5);
+                                    *ptr3.add(12).cast::<usize>() = len5;
+                                    *ptr3.add(8).cast::<*mut u8>() = ptr5.cast_mut();
+                                }
+                                DriverError::SystemError(e) => {
+                                    *ptr3.add(4).cast::<u8>() = (1i32) as u8;
+                                    let vec6 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr6 = vec6.as_ptr().cast::<u8>();
+                                    let len6 = vec6.len();
+                                    ::core::mem::forget(vec6);
+                                    *ptr3.add(12).cast::<usize>() = len6;
+                                    *ptr3.add(8).cast::<*mut u8>() = ptr6.cast_mut();
+                                }
+                                DriverError::InvalidInput(e) => {
+                                    *ptr3.add(4).cast::<u8>() = (2i32) as u8;
+                                    let vec7 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr7 = vec7.as_ptr().cast::<u8>();
+                                    let len7 = vec7.len();
+                                    ::core::mem::forget(vec7);
+                                    *ptr3.add(12).cast::<usize>() = len7;
+                                    *ptr3.add(8).cast::<*mut u8>() = ptr7.cast_mut();
+                                }
+                                DriverError::UnknownError(e) => {
+                                    *ptr3.add(4).cast::<u8>() = (3i32) as u8;
+                                    let vec8 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr8 = vec8.as_ptr().cast::<u8>();
+                                    let len8 = vec8.len();
+                                    ::core::mem::forget(vec8);
+                                    *ptr3.add(12).cast::<usize>() = len8;
+                                    *ptr3.add(8).cast::<*mut u8>() = ptr8.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr3
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_bind<T: Guest>(arg0: *mut u8) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => {
+                            let l1 = *arg0.add(4).cast::<*mut u8>();
+                            let l2 = *arg0.add(8).cast::<usize>();
+                            _rt::cabi_dealloc(l1, l2, 1);
+                        }
+                        _ => {
+                            let l3 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l3 {
+                                0 => {
+                                    let l4 = *arg0.add(8).cast::<*mut u8>();
+                                    let l5 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l4, l5, 1);
+                                }
+                                1 => {
+                                    let l6 = *arg0.add(8).cast::<*mut u8>();
+                                    let l7 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l6, l7, 1);
+                                }
+                                2 => {
+                                    let l8 = *arg0.add(8).cast::<*mut u8>();
+                                    let l9 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l8, l9, 1);
+                                }
+                                _ => {
+                                    let l10 = *arg0.add(8).cast::<*mut u8>();
+                                    let l11 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l10, l11, 1);
+                                }
+                            }
+                        }
+                    }
+                }
                 pub trait Guest {
                     fn intend(input: _rt::String) -> Result<_rt::String, DriverError>;
                     fn done(input: _rt::String) -> Result<(), DriverError>;
@@ -763,6 +886,10 @@ pub mod exports {
                         value: _rt::String,
                     ) -> Result<(), DriverError>;
                     fn view(input: _rt::String) -> Result<_rt::String, DriverError>;
+                    fn bind(
+                        input: _rt::String,
+                        existing: Option<_rt::String>,
+                    ) -> Result<_rt::String, DriverError>;
                 }
                 #[doc(hidden)]
                 macro_rules! __export_component_units_driver_cabi {
@@ -793,7 +920,14 @@ pub mod exports {
                         $($path_to_types)*:: _export_view_cabi::<$ty > (arg0, arg1) }
                         #[export_name = "cabi_post_component:units/driver#view"] unsafe
                         extern "C" fn _post_return_view(arg0 : * mut u8,) {
-                        $($path_to_types)*:: __post_return_view::<$ty > (arg0) } };
+                        $($path_to_types)*:: __post_return_view::<$ty > (arg0) }
+                        #[export_name = "component:units/driver#bind"] unsafe extern "C"
+                        fn export_bind(arg0 : * mut u8, arg1 : usize, arg2 : i32, arg3 :
+                        * mut u8, arg4 : usize,) -> * mut u8 { $($path_to_types)*::
+                        _export_bind_cabi::<$ty > (arg0, arg1, arg2, arg3, arg4) }
+                        #[export_name = "cabi_post_component:units/driver#bind"] unsafe
+                        extern "C" fn _post_return_bind(arg0 : * mut u8,) {
+                        $($path_to_types)*:: __post_return_bind::<$ty > (arg0) } };
                     };
                 }
                 #[doc(hidden)]
@@ -872,20 +1006,21 @@ pub(crate) use __export_driver_world_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.36.0:component:units:driver-world:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 579] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc0\x03\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 613] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe2\x03\x01A\x02\x01\
 A\x04\x01B\x08\x01q\x05\x09not-found\x01s\0\x0binvalid-key\x01s\0\x0csystem-erro\
 r\x01s\0\x11permission-denied\x01s\0\x0dunknown-error\x01s\0\x04\0\x0dstorage-er\
 ror\x03\0\0\x01j\x01s\x01\x01\x01@\x01\x03keys\0\x02\x04\0\x03get\x01\x03\x01j\0\
 \x01\x01\x01@\x02\x03keys\x05values\0\x04\x04\0\x03set\x01\x05\x03\0\x17componen\
-t:units/storage\x05\0\x01B\x0b\x01q\x04\x11permission-denied\x01s\0\x0csystem-er\
+t:units/storage\x05\0\x01B\x0e\x01q\x04\x11permission-denied\x01s\0\x0csystem-er\
 ror\x01s\0\x0dinvalid-input\x01s\0\x0dunknown-error\x01s\0\x04\0\x0cdriver-error\
 \x03\0\0\x01j\x01s\x01\x01\x01@\x01\x05inputs\0\x02\x04\0\x06intend\x01\x03\x01j\
 \0\x01\x01\x01@\x01\x05inputs\0\x04\x04\0\x04done\x01\x05\x01@\x03\x03fros\x02to\
-s\x05values\0\x04\x04\0\x08transfer\x01\x06\x04\0\x04view\x01\x03\x04\0\x16compo\
-nent:units/driver\x05\x01\x04\0\x1ccomponent:units/driver-world\x04\0\x0b\x12\x01\
-\0\x0cdriver-world\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-compon\
-ent\x070.220.0\x10wit-bindgen-rust\x060.36.0";
+s\x05values\0\x04\x04\0\x08transfer\x01\x06\x04\0\x04view\x01\x03\x01ks\x01@\x02\
+\x05inputs\x08existing\x07\0\x02\x04\0\x04bind\x01\x08\x04\0\x16component:units/\
+driver\x05\x01\x04\0\x1ccomponent:units/driver-world\x04\0\x0b\x12\x01\0\x0cdriv\
+er-world\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.2\
+20.0\x10wit-bindgen-rust\x060.36.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {

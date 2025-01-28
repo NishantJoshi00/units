@@ -1,6 +1,5 @@
 package component:units;
 
-
 interface driver {
     variant driver-error {
         permission-denied(string),
@@ -12,16 +11,5 @@ interface driver {
     done: func(input: string) -> result<_, driver-error>;
     transfer: func(fro: string, to: string, value: string) -> result<_, driver-error>; 
     view: func(input: string) -> result<string, driver-error>;
-}
-
-world module-world {
-    variant user-error {
-        permission-denied(string),
-        system-error(string),
-        invalid-input(string), 
-        failure(string),
-        unknown-error(string)
-    }
-    import driver;
-    export main: func(input: string) -> result<string, user-error>;
+    bind: func(input: string, existing: option<string>) -> result<string, driver-error>;
 }

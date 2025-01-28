@@ -53,6 +53,12 @@ impl driver::Guest for Component {
     fn view(input: String) -> Result<String, driver::DriverError> {
         Ok(input)
     }
+    fn bind(
+        input: String,
+        _existing: Option<String>,
+    ) -> Result<String, driver::DriverError> {
+        Ok(input)
+    }
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]

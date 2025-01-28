@@ -148,4 +148,9 @@ impl units::driver::Host for types::ProcessState {
 
         Ok(result)
     }
+
+    fn bind(&mut self, input: String, existing: Option<String>) -> Result<String, DriverError> {
+        Err(DriverError::SystemError("Programmability Disabled".to_string()))
+    }
+    
 }

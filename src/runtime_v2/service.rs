@@ -1,7 +1,8 @@
 use tonic::{Request, Response};
 
 use crate::runtime_v2::driver::DriverInfo;
-use crate::runtime_v2::resolver::PathInfo;
+use crate::runtime_v2::types::ProcessState;
+use crate::runtime_v2::types::UserCtx;
 use crate::service::proto_types::BinaryType;
 use crate::service::proto_types::DriverDetail;
 
@@ -70,39 +71,26 @@ impl server_traits::Bind for super::Runtime {
         &self,
         request: Request<types::BindRequest>,
     ) -> Result<Response<types::BindResponse>, tonic::Status> {
-        let mut writer = self
-            .driver_layer
-            .resolver
-            .mount_points
-            .write()
-            .map_err(|_| tonic::Status::internal("Failed to lock mount points".to_string()))?;
         let request = request.into_inner();
 
-        let reader = self
-            .driver_layer
-            .drivers
-            .read()
-            .map_err(|_| tonic::Status::internal("Failed to lock drivers".to_string()))?;
+        let mut process_state = ProcessState::new(
+            UserCtx {
+                user_id: "root".to_string(),
+            },
+            self.driver_layer.clone(),
+            self.platform_layer.clone(),
+            self.event_sender.clone(),
+        );
 
-        let driver_info = DriverInfo {
-            name: request.driver_name.clone(),
-            version: request.driver_version.clone(),
-        };
+        process_state.perform_bind(
+            request.path.clone(),
+            DriverInfo {
+                name: request.driver_name.clone(),
+                version: request.driver_version.clone(),
+            },
+            request.account_info.clone(),
+        ).map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-        if !reader.contains_key(&driver_info) {
-            tracing::error!(name = %request.driver_name,version=%request.driver_version, "Driver not found");
-            return Err(tonic::Status::not_found("Driver not found"));
-        }
-
-        let path_info = PathInfo {
-            driver_name: request.driver_name.clone(),
-            driver_version: request.driver_version.clone(),
-            account_info: request.account_info.clone(),
-        };
-
-        writer.insert(request.path.clone(), path_info);
-
-        tracing::info!(path = %request.path, driver = %request.driver_name,verion=%request.driver_version ,account_info = %request.account_info, "Path bound");
 
         let output = types::BindResponse {
             driver_name: request.driver_name,
