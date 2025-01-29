@@ -213,18 +213,15 @@ impl ProcessState {
                 )
             })?;
 
-        wasmtime_wasi::add_to_linker_sync(&mut linker).map_err(|_| {
+        wasmtime_wasi::add_to_linker_sync(&mut linker).map_err(|e| {
             component::module::component::units::driver::DriverError::SystemError(
-                "Failed while adding WASI to linker".to_string(),
+                e.to_string()
             )
         })?;
 
-
-        wasmtime_wasi_http::add_to_linker_sync(&mut linker).map_err(|_| {
-            component::module::component::units::driver::DriverError::SystemError(
-                "Failed while adding WASI HTTP to linker".to_string(),
-            )
-        })?;
+        // wasmtime_wasi_http::add_to_linker_sync(&mut linker).map_err(|e| {
+        //     component::module::component::units::driver::DriverError::SystemError(e.to_string())
+        // })?;
 
         Ok((linker, state))
     }
@@ -289,9 +286,8 @@ impl ProcessState {
                     "Failed while finding path".to_string(),
                 )
             })?;
-        let output = reader
-            .get(path.as_str()).cloned();
-        
+        let output = reader.get(path.as_str()).cloned();
+
         drop(reader);
 
         match output {
@@ -301,9 +297,9 @@ impl ProcessState {
 
                 let instance =
                     component::driver::DriverWorld::instantiate(&mut state, &driver, &linker)
-                        .map_err(|_| {
+                        .map_err(|e| {
                             component::module::component::units::driver::DriverError::SystemError(
-                                "Failed while instantiating driver".to_string(),
+                                e.to_string()
                             )
                         })?;
 
@@ -327,21 +323,23 @@ impl ProcessState {
                     account_info: output,
                 };
 
-                let mut writer = self
-                    .driver_runtime
-                    .resolver
-                    .mount_points
-                    .write()
-                    .map_err(|_| {
-                        component::module::component::units::driver::DriverError::SystemError(
-                            "Failed to lock mount points".to_string(),
-                        )
-                    })?;
+                let mut writer =
+                    self.driver_runtime
+                        .resolver
+                        .mount_points
+                        .write()
+                        .map_err(|_| {
+                            component::module::component::units::driver::DriverError::SystemError(
+                                "Failed to lock mount points".to_string(),
+                            )
+                        })?;
 
                 writer.insert(path.clone(), path_info);
             }
             Some(existing) => {
-                if existing.driver_name != driver_info.name || existing.driver_version != driver_info.version {
+                if existing.driver_name != driver_info.name
+                    || existing.driver_version != driver_info.version
+                {
                     return Err(
                         component::module::component::units::driver::DriverError::InvalidInput(
                             "Invalid driver binding".to_string(),
@@ -354,9 +352,9 @@ impl ProcessState {
 
                 let instance =
                     component::driver::DriverWorld::instantiate(&mut state, &driver, &linker)
-                        .map_err(|_| {
+                        .map_err(|e| {
                             component::module::component::units::driver::DriverError::SystemError(
-                                "Failed while instantiating driver".to_string(),
+                                e.to_string()
                             )
                         })?;
 
@@ -380,16 +378,16 @@ impl ProcessState {
                     account_info: output,
                 };
 
-                let mut writer = self
-                    .driver_runtime
-                    .resolver
-                    .mount_points
-                    .write()
-                    .map_err(|_| {
-                        component::module::component::units::driver::DriverError::SystemError(
-                            "Failed to lock mount points".to_string(),
-                        )
-                    })?;
+                let mut writer =
+                    self.driver_runtime
+                        .resolver
+                        .mount_points
+                        .write()
+                        .map_err(|_| {
+                            component::module::component::units::driver::DriverError::SystemError(
+                                "Failed to lock mount points".to_string(),
+                            )
+                        })?;
                 writer.insert(path.clone(), path_info);
             }
         }
@@ -435,7 +433,6 @@ impl wasmtime_wasi_http::WasiHttpView for DriverState {
         &mut self.table
     }
 }
-
 
 impl wasmtime_wasi::WasiView for ProcessState {
     fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
