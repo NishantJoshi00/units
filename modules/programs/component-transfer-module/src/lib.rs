@@ -9,10 +9,13 @@ impl Guest for Component {
     fn main(input: String) -> Result<String, bindings::UserError> {
         let input = serde_json::from_str::<Input>(&input)
             .map_err(|e| bindings::UserError::InvalidInput(e.to_string()))?;
+
         let p1 = driver::intend(&input.path1)
             .map_err(|e| bindings::UserError::UnknownError(e.to_string()))?;
+
         let p2 = driver::intend(&input.path2)
             .map_err(|e| bindings::UserError::UnknownError(e.to_string()))?;
+
         let data = Data {
             amount: input.amount,
         };
@@ -25,6 +28,7 @@ impl Guest for Component {
 
         driver::done(&p1).map_err(|e| bindings::UserError::UnknownError(e.to_string()))?;
         driver::done(&p2).map_err(|e| bindings::UserError::UnknownError(e.to_string()))?;
+
         Ok("done".to_string())
     }
 }

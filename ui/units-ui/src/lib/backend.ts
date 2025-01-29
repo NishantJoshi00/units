@@ -1,6 +1,6 @@
 
-import { BindRequest, LoadDriverRequest, ExecutionRequest, BinaryType, DriverDetailsRequest } from '@/proto/finternet_pb';
-import { BindClient, DriverClient, DriverDetailsClient, ExecutionClient } from '@/proto/FinternetServiceClientPb';
+import { BindRequest, LoadDriverRequest, ExecutionRequest, DriverDetailsRequest } from '@/proto/service_pb';
+import { BindClient, DriverClient, DriverDetailsClient, ExecutionClient } from '@/proto/ServiceServiceClientPb';
 
 async function load_driver(
     driverName: string,
@@ -18,7 +18,6 @@ async function load_driver(
     request
         .setDriverName(driverName)
         .setDriverVersion(driverVersion)
-        .setDriverType(driverType === "WASM" ? BinaryType.WASM : BinaryType.WAT)
         .setDriverBinary(new Uint8Array(file));
 
     const response = await client.loadDriver(request, {});
@@ -61,9 +60,7 @@ async function execute(
     const file = await binary.arrayBuffer();
 
     request
-        .setName(name)
         .setInput(input)
-        .setType(type === "WASM" ? BinaryType.WASM : BinaryType.WAT)
         .setBinary(new Uint8Array(file));
 
     const response = await client.execute(request, {});
@@ -71,24 +68,6 @@ async function execute(
     await new Promise(resolve => setTimeout(resolve, 1000)) // 1 second delay
     return JSON.stringify(response.toObject());
 }
-
-// function createDriverDetailClient() {
-//     return new DriverDetailsClient(API_DOMAIN, null, null)
-// }
-
-// export const getDriverList = () => {
-//     return new Promise((resolve, reject)=>{
-//         const driverDetailsClient = createDriverDetailClient()
-//         const request = new DriverDetailsRequest()
-//         driverDetailsClient.sendDetails(request, {}, (err, response) => {
-//             if(err) {
-//                 reject(err);
-//                 return
-//             }
-//             resolve(response.toObject())
-//         })
-//     })
-// }
 
 async function createDriverDetailClient(){
     const client = new DriverDetailsClient("http://localhost:8080");

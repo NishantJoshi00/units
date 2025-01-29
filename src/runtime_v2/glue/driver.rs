@@ -3,6 +3,7 @@ use crate::runtime_v2::types::DriverState;
 
 impl Host for DriverState {
     fn get(&mut self, key: String) -> Result<String, StorageError> {
+        tracing::info!(runtime = "driver", call = "get", key = key.as_str());
         let output =
             self.platform.storage.get(&key).map_err(|e| {
                 StorageError::SystemError(format!("Failed while getting key: {:?}", e))
@@ -14,6 +15,7 @@ impl Host for DriverState {
     }
 
     fn set(&mut self, key: String, value: String) -> Result<(), StorageError> {
+        tracing::info!(runtime = "driver", call = "set", key = key.as_str());
         self.platform
             .storage
             .set(&key, &value)
