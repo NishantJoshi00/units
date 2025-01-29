@@ -72,10 +72,10 @@ impl Runtime {
 
         wasmtime_wasi::add_to_linker_sync(&mut linker)?;
 
-
-
         let instance =
             types::component::module::ModuleWorld::instantiate(&mut state, &module, &linker)?;
+
+        tracing::info!(runtime = "process", input = %input, "executing module");
 
         let result = instance.call_main(state, &input)?;
 

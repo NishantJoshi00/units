@@ -658,6 +658,146 @@ pub mod component {
                     }
                 }
             }
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn bind(
+                input: &str,
+                existing: Option<&str>,
+            ) -> Result<_rt::String, DriverError> {
+                unsafe {
+                    #[repr(align(4))]
+                    struct RetArea([::core::mem::MaybeUninit<u8>; 16]);
+                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+                    let vec0 = input;
+                    let ptr0 = vec0.as_ptr().cast::<u8>();
+                    let len0 = vec0.len();
+                    let (result2_0, result2_1, result2_2) = match existing {
+                        Some(e) => {
+                            let vec1 = e;
+                            let ptr1 = vec1.as_ptr().cast::<u8>();
+                            let len1 = vec1.len();
+                            (1i32, ptr1.cast_mut(), len1)
+                        }
+                        None => (0i32, ::core::ptr::null_mut(), 0usize),
+                    };
+                    let ptr3 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "component:units/driver")]
+                    extern "C" {
+                        #[link_name = "bind"]
+                        fn wit_import(
+                            _: *mut u8,
+                            _: usize,
+                            _: i32,
+                            _: *mut u8,
+                            _: usize,
+                            _: *mut u8,
+                        );
+                    }
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(
+                        _: *mut u8,
+                        _: usize,
+                        _: i32,
+                        _: *mut u8,
+                        _: usize,
+                        _: *mut u8,
+                    ) {
+                        unreachable!()
+                    }
+                    wit_import(
+                        ptr0.cast_mut(),
+                        len0,
+                        result2_0,
+                        result2_1,
+                        result2_2,
+                        ptr3,
+                    );
+                    let l4 = i32::from(*ptr3.add(0).cast::<u8>());
+                    match l4 {
+                        0 => {
+                            let e = {
+                                let l5 = *ptr3.add(4).cast::<*mut u8>();
+                                let l6 = *ptr3.add(8).cast::<usize>();
+                                let len7 = l6;
+                                let bytes7 = _rt::Vec::from_raw_parts(
+                                    l5.cast(),
+                                    len7,
+                                    len7,
+                                );
+                                _rt::string_lift(bytes7)
+                            };
+                            Ok(e)
+                        }
+                        1 => {
+                            let e = {
+                                let l8 = i32::from(*ptr3.add(4).cast::<u8>());
+                                let v21 = match l8 {
+                                    0 => {
+                                        let e21 = {
+                                            let l9 = *ptr3.add(8).cast::<*mut u8>();
+                                            let l10 = *ptr3.add(12).cast::<usize>();
+                                            let len11 = l10;
+                                            let bytes11 = _rt::Vec::from_raw_parts(
+                                                l9.cast(),
+                                                len11,
+                                                len11,
+                                            );
+                                            _rt::string_lift(bytes11)
+                                        };
+                                        DriverError::PermissionDenied(e21)
+                                    }
+                                    1 => {
+                                        let e21 = {
+                                            let l12 = *ptr3.add(8).cast::<*mut u8>();
+                                            let l13 = *ptr3.add(12).cast::<usize>();
+                                            let len14 = l13;
+                                            let bytes14 = _rt::Vec::from_raw_parts(
+                                                l12.cast(),
+                                                len14,
+                                                len14,
+                                            );
+                                            _rt::string_lift(bytes14)
+                                        };
+                                        DriverError::SystemError(e21)
+                                    }
+                                    2 => {
+                                        let e21 = {
+                                            let l15 = *ptr3.add(8).cast::<*mut u8>();
+                                            let l16 = *ptr3.add(12).cast::<usize>();
+                                            let len17 = l16;
+                                            let bytes17 = _rt::Vec::from_raw_parts(
+                                                l15.cast(),
+                                                len17,
+                                                len17,
+                                            );
+                                            _rt::string_lift(bytes17)
+                                        };
+                                        DriverError::InvalidInput(e21)
+                                    }
+                                    n => {
+                                        debug_assert_eq!(n, 3, "invalid enum discriminant");
+                                        let e21 = {
+                                            let l18 = *ptr3.add(8).cast::<*mut u8>();
+                                            let l19 = *ptr3.add(12).cast::<usize>();
+                                            let len20 = l19;
+                                            let bytes20 = _rt::Vec::from_raw_parts(
+                                                l18.cast(),
+                                                len20,
+                                                len20,
+                                            );
+                                            _rt::string_lift(bytes20)
+                                        };
+                                        DriverError::UnknownError(e21)
+                                    }
+                                };
+                                v21
+                            };
+                            Err(e)
+                        }
+                        _ => _rt::invalid_enum_discriminant(),
+                    }
+                }
+            }
         }
     }
 }
@@ -725,18 +865,19 @@ pub(crate) use __export_module_world_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.36.0:component:units:module-world:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 518] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x83\x03\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 552] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa5\x03\x01A\x02\x01\
 A\x07\x01q\x05\x11permission-denied\x01s\0\x0csystem-error\x01s\0\x0dinvalid-inp\
 ut\x01s\0\x07failure\x01s\0\x0dunknown-error\x01s\0\x03\0\x0auser-error\x03\0\0\x01\
-B\x0b\x01q\x04\x11permission-denied\x01s\0\x0csystem-error\x01s\0\x0dinvalid-inp\
+B\x0e\x01q\x04\x11permission-denied\x01s\0\x0csystem-error\x01s\0\x0dinvalid-inp\
 ut\x01s\0\x0dunknown-error\x01s\0\x04\0\x0cdriver-error\x03\0\0\x01j\x01s\x01\x01\
 \x01@\x01\x05inputs\0\x02\x04\0\x06intend\x01\x03\x01j\0\x01\x01\x01@\x01\x05inp\
 uts\0\x04\x04\0\x04done\x01\x05\x01@\x03\x03fros\x02tos\x05values\0\x04\x04\0\x08\
-transfer\x01\x06\x04\0\x04view\x01\x03\x03\0\x16component:units/driver\x05\x02\x01\
-j\x01s\x01\x01\x01@\x01\x05inputs\0\x03\x04\0\x04main\x01\x04\x04\0\x1ccomponent\
-:units/module-world\x04\0\x0b\x12\x01\0\x0cmodule-world\x03\0\0\0G\x09producers\x01\
-\x0cprocessed-by\x02\x0dwit-component\x070.220.0\x10wit-bindgen-rust\x060.36.0";
+transfer\x01\x06\x04\0\x04view\x01\x03\x01ks\x01@\x02\x05inputs\x08existing\x07\0\
+\x02\x04\0\x04bind\x01\x08\x03\0\x16component:units/driver\x05\x02\x01j\x01s\x01\
+\x01\x01@\x01\x05inputs\0\x03\x04\0\x04main\x01\x04\x04\0\x1ccomponent:units/mod\
+ule-world\x04\0\x0b\x12\x01\0\x0cmodule-world\x03\0\0\0G\x09producers\x01\x0cpro\
+cessed-by\x02\x0dwit-component\x070.220.0\x10wit-bindgen-rust\x060.36.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {

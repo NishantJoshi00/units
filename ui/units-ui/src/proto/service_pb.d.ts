@@ -2,15 +2,76 @@ import * as jspb from 'google-protobuf'
 
 
 
+export class ListResolverRequest extends jspb.Message {
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ListResolverRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: ListResolverRequest): ListResolverRequest.AsObject;
+  static serializeBinaryToWriter(message: ListResolverRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ListResolverRequest;
+  static deserializeBinaryFromReader(message: ListResolverRequest, reader: jspb.BinaryReader): ListResolverRequest;
+}
+
+export namespace ListResolverRequest {
+  export type AsObject = {
+  }
+}
+
+export class ListResolverResponse extends jspb.Message {
+  getPathMappingList(): Array<PathMapping>;
+  setPathMappingList(value: Array<PathMapping>): ListResolverResponse;
+  clearPathMappingList(): ListResolverResponse;
+  addPathMapping(value?: PathMapping, index?: number): PathMapping;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ListResolverResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: ListResolverResponse): ListResolverResponse.AsObject;
+  static serializeBinaryToWriter(message: ListResolverResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ListResolverResponse;
+  static deserializeBinaryFromReader(message: ListResolverResponse, reader: jspb.BinaryReader): ListResolverResponse;
+}
+
+export namespace ListResolverResponse {
+  export type AsObject = {
+    pathMappingList: Array<PathMapping.AsObject>,
+  }
+}
+
+export class PathMapping extends jspb.Message {
+  getPath(): string;
+  setPath(value: string): PathMapping;
+
+  getDriverName(): string;
+  setDriverName(value: string): PathMapping;
+
+  getDriverVersion(): string;
+  setDriverVersion(value: string): PathMapping;
+
+  getAccountInfo(): string;
+  setAccountInfo(value: string): PathMapping;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): PathMapping.AsObject;
+  static toObject(includeInstance: boolean, msg: PathMapping): PathMapping.AsObject;
+  static serializeBinaryToWriter(message: PathMapping, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): PathMapping;
+  static deserializeBinaryFromReader(message: PathMapping, reader: jspb.BinaryReader): PathMapping;
+}
+
+export namespace PathMapping {
+  export type AsObject = {
+    path: string,
+    driverName: string,
+    driverVersion: string,
+    accountInfo: string,
+  }
+}
+
 export class LoadDriverRequest extends jspb.Message {
   getDriverName(): string;
   setDriverName(value: string): LoadDriverRequest;
 
   getDriverVersion(): string;
   setDriverVersion(value: string): LoadDriverRequest;
-
-  getDriverType(): BinaryType;
-  setDriverType(value: BinaryType): LoadDriverRequest;
 
   getDriverBinary(): Uint8Array | string;
   getDriverBinary_asU8(): Uint8Array;
@@ -29,7 +90,6 @@ export namespace LoadDriverRequest {
   export type AsObject = {
     driverName: string,
     driverVersion: string,
-    driverType: BinaryType,
     driverBinary: Uint8Array | string,
   }
 }
@@ -205,22 +265,20 @@ export namespace UnbindResponse {
 }
 
 export class ExecutionRequest extends jspb.Message {
-  getName(): string;
-  setName(value: string): ExecutionRequest;
-
-  getVersion(): string;
-  setVersion(value: string): ExecutionRequest;
-
   getInput(): string;
   setInput(value: string): ExecutionRequest;
-
-  getType(): BinaryType;
-  setType(value: BinaryType): ExecutionRequest;
 
   getBinary(): Uint8Array | string;
   getBinary_asU8(): Uint8Array;
   getBinary_asB64(): string;
   setBinary(value: Uint8Array | string): ExecutionRequest;
+  hasBinary(): boolean;
+  clearBinary(): ExecutionRequest;
+
+  getProgramId(): string;
+  setProgramId(value: string): ExecutionRequest;
+  hasProgramId(): boolean;
+  clearProgramId(): ExecutionRequest;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ExecutionRequest.AsObject;
@@ -232,11 +290,125 @@ export class ExecutionRequest extends jspb.Message {
 
 export namespace ExecutionRequest {
   export type AsObject = {
+    input: string,
+    binary?: Uint8Array | string,
+    programId?: string,
+  }
+
+  export enum BinaryCase { 
+    _BINARY_NOT_SET = 0,
+    BINARY = 5,
+  }
+
+  export enum ProgramIdCase { 
+    _PROGRAM_ID_NOT_SET = 0,
+    PROGRAM_ID = 6,
+  }
+}
+
+export class SubmitProgramRequest extends jspb.Message {
+  getName(): string;
+  setName(value: string): SubmitProgramRequest;
+
+  getVersion(): string;
+  setVersion(value: string): SubmitProgramRequest;
+
+  getBinary(): Uint8Array | string;
+  getBinary_asU8(): Uint8Array;
+  getBinary_asB64(): string;
+  setBinary(value: Uint8Array | string): SubmitProgramRequest;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): SubmitProgramRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: SubmitProgramRequest): SubmitProgramRequest.AsObject;
+  static serializeBinaryToWriter(message: SubmitProgramRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): SubmitProgramRequest;
+  static deserializeBinaryFromReader(message: SubmitProgramRequest, reader: jspb.BinaryReader): SubmitProgramRequest;
+}
+
+export namespace SubmitProgramRequest {
+  export type AsObject = {
     name: string,
     version: string,
-    input: string,
-    type: BinaryType,
     binary: Uint8Array | string,
+  }
+}
+
+export class ListProgramRequest extends jspb.Message {
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ListProgramRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: ListProgramRequest): ListProgramRequest.AsObject;
+  static serializeBinaryToWriter(message: ListProgramRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ListProgramRequest;
+  static deserializeBinaryFromReader(message: ListProgramRequest, reader: jspb.BinaryReader): ListProgramRequest;
+}
+
+export namespace ListProgramRequest {
+  export type AsObject = {
+  }
+}
+
+export class ListProgramResponse extends jspb.Message {
+  getProgramList(): Array<Program>;
+  setProgramList(value: Array<Program>): ListProgramResponse;
+  clearProgramList(): ListProgramResponse;
+  addProgram(value?: Program, index?: number): Program;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ListProgramResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: ListProgramResponse): ListProgramResponse.AsObject;
+  static serializeBinaryToWriter(message: ListProgramResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ListProgramResponse;
+  static deserializeBinaryFromReader(message: ListProgramResponse, reader: jspb.BinaryReader): ListProgramResponse;
+}
+
+export namespace ListProgramResponse {
+  export type AsObject = {
+    programList: Array<Program.AsObject>,
+  }
+}
+
+export class Program extends jspb.Message {
+  getProgramId(): string;
+  setProgramId(value: string): Program;
+
+  getName(): string;
+  setName(value: string): Program;
+
+  getVersion(): string;
+  setVersion(value: string): Program;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): Program.AsObject;
+  static toObject(includeInstance: boolean, msg: Program): Program.AsObject;
+  static serializeBinaryToWriter(message: Program, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): Program;
+  static deserializeBinaryFromReader(message: Program, reader: jspb.BinaryReader): Program;
+}
+
+export namespace Program {
+  export type AsObject = {
+    programId: string,
+    name: string,
+    version: string,
+  }
+}
+
+export class SubmitProgramResponse extends jspb.Message {
+  getProgramId(): string;
+  setProgramId(value: string): SubmitProgramResponse;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): SubmitProgramResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: SubmitProgramResponse): SubmitProgramResponse.AsObject;
+  static serializeBinaryToWriter(message: SubmitProgramResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): SubmitProgramResponse;
+  static deserializeBinaryFromReader(message: SubmitProgramResponse, reader: jspb.BinaryReader): SubmitProgramResponse;
+}
+
+export namespace SubmitProgramResponse {
+  export type AsObject = {
+    programId: string,
   }
 }
 
@@ -318,7 +490,3 @@ export namespace DriverDetailsResponse {
   }
 }
 
-export enum BinaryType { 
-  WAT = 0,
-  WASM = 1,
-}

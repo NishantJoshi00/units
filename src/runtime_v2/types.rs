@@ -215,6 +215,11 @@ impl ProcessState {
                 "Failed while adding WASI to linker".to_string(),
             )
         })?;
+        wasmtime_wasi_http::add_to_linker_sync(&mut linker).map_err(|_| {
+            component::module::component::units::driver::DriverError::SystemError(
+                "Failed while adding WASI HTTP to linker".to_string(),
+            )
+        })?;
 
         Ok((linker, state))
     }

@@ -5,6 +5,7 @@ use crate::runtime_v2::types::component::module::component::units::driver::Drive
 
 impl units::driver::Host for types::ProcessState {
     fn intend(&mut self, input: String) -> Result<String, DriverError> {
+        tracing::info!(loc = "start", runtime = "process", call = "intend", input = input.as_str());
         let path_info = self.get_path_info(input)?;
 
         let driver_info = DriverInfo {
@@ -42,10 +43,13 @@ impl units::driver::Host for types::ProcessState {
             },
         );
 
+        tracing::info!(loc = "end", runtime = "process", call = "intend", key = key.as_str());
+
         Ok(key)
     }
 
     fn done(&mut self, input: String) -> Result<(), DriverError> {
+        tracing::info!(loc = "start", runtime = "process", call = "done", input = input.as_str());
         let descriptor = self
             .descriptors
             .get(&input)
@@ -79,10 +83,14 @@ impl units::driver::Host for types::ProcessState {
 
         self.descriptors.remove(&input);
 
+        tracing::info!(loc = "end", runtime = "process", call = "done", input = input.as_str());
+
         Ok(())
     }
 
     fn transfer(&mut self, fro: String, to: String, value: String) -> Result<(), DriverError> {
+        tracing::info!(loc = "start", runtime = "process", call = "transfer", from = fro.as_str(), to = to.as_str(), value = value.as_str());
+
         let d_1 = self.get_descriptor(fro)?;
         let d_2 = self.get_descriptor(to)?;
 
@@ -116,10 +124,14 @@ impl units::driver::Host for types::ProcessState {
             .map_err(|_| DriverError::SystemError("Failed while calling transfer".to_string()))?
             .map_err(|_| DriverError::SystemError("Failed while calling transfer".to_string()))?;
 
+        tracing::info!(loc = "end", runtime = "process", call = "transfer");
+
         Ok(())
     }
 
     fn view(&mut self, input: String) -> Result<String, DriverError> {
+        tracing::info!(loc = "start", runtime = "process", call = "view", input = input.as_str());
+
         let descriptor = self.get_descriptor(input)?;
         let account_info = serde_json::to_string(&descriptor.account_info).map_err(|_| {
             DriverError::SystemError("Failed while serializing account info".to_string())
@@ -145,6 +157,8 @@ impl units::driver::Host for types::ProcessState {
             .call_view(state, &account_info)
             .map_err(|_| DriverError::SystemError("Failed while calling view".to_string()))?
             .map_err(|_| DriverError::SystemError("Failed while calling view".to_string()))?;
+
+        tracing::info!(loc = "end", runtime = "process", call = "view", result = result.as_str());
 
         Ok(result)
     }
