@@ -14,5 +14,6 @@ interface storage {
 
 world driver-world {
     export driver;
+    import http;
     import storage;
 }

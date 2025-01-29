@@ -3,7 +3,7 @@
 #[allow(warnings)]
 mod bindings;
 
-use bindings::{component::units::storage, exports::component::units::driver};
+use bindings::{component::units::{http, storage}, exports::component::units::driver};
 
 struct Component;
 
@@ -57,6 +57,19 @@ impl driver::Guest for Component {
         input: String,
         _existing: Option<String>,
     ) -> Result<String, driver::DriverError> {
+
+        let request = http::Request {
+            method: http::Method::Get,
+            url: "https://google.com".to_string(),
+            headers: vec![
+                ("Content-Type".to_string(), "application/json".to_string()),
+            ],
+            body: None,
+        };
+
+        let response = http::send_request(&request);
+
+
         Ok(input)
     }
 }

@@ -6,6 +6,228 @@
 pub mod component {
     pub mod units {
         #[allow(dead_code, clippy::all)]
+        pub mod http {
+            #[used]
+            #[doc(hidden)]
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            #[repr(u8)]
+            #[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
+            pub enum Method {
+                Get,
+                Post,
+                Put,
+                Delete,
+            }
+            impl ::core::fmt::Debug for Method {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    match self {
+                        Method::Get => f.debug_tuple("Method::Get").finish(),
+                        Method::Post => f.debug_tuple("Method::Post").finish(),
+                        Method::Put => f.debug_tuple("Method::Put").finish(),
+                        Method::Delete => f.debug_tuple("Method::Delete").finish(),
+                    }
+                }
+            }
+            impl Method {
+                #[doc(hidden)]
+                pub unsafe fn _lift(val: u8) -> Method {
+                    if !cfg!(debug_assertions) {
+                        return ::core::mem::transmute(val);
+                    }
+                    match val {
+                        0 => Method::Get,
+                        1 => Method::Post,
+                        2 => Method::Put,
+                        3 => Method::Delete,
+                        _ => panic!("invalid enum discriminant"),
+                    }
+                }
+            }
+            #[derive(Clone)]
+            pub struct Request {
+                pub method: Method,
+                pub url: _rt::String,
+                pub headers: _rt::Vec<(_rt::String, _rt::String)>,
+                pub body: Option<_rt::String>,
+            }
+            impl ::core::fmt::Debug for Request {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    f.debug_struct("Request")
+                        .field("method", &self.method)
+                        .field("url", &self.url)
+                        .field("headers", &self.headers)
+                        .field("body", &self.body)
+                        .finish()
+                }
+            }
+            #[derive(Clone)]
+            pub struct Response {
+                pub status: u16,
+                pub headers: _rt::Vec<(_rt::String, _rt::String)>,
+                pub body: _rt::String,
+            }
+            impl ::core::fmt::Debug for Response {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    f.debug_struct("Response")
+                        .field("status", &self.status)
+                        .field("headers", &self.headers)
+                        .field("body", &self.body)
+                        .finish()
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            pub fn send_request(request: &Request) -> Response {
+                unsafe {
+                    #[repr(align(4))]
+                    struct RetArea([::core::mem::MaybeUninit<u8>; 20]);
+                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 20]);
+                    let Request {
+                        method: method0,
+                        url: url0,
+                        headers: headers0,
+                        body: body0,
+                    } = request;
+                    let vec1 = url0;
+                    let ptr1 = vec1.as_ptr().cast::<u8>();
+                    let len1 = vec1.len();
+                    let vec5 = headers0;
+                    let len5 = vec5.len();
+                    let layout5 = _rt::alloc::Layout::from_size_align_unchecked(
+                        vec5.len() * 16,
+                        4,
+                    );
+                    let result5 = if layout5.size() != 0 {
+                        let ptr = _rt::alloc::alloc(layout5).cast::<u8>();
+                        if ptr.is_null() {
+                            _rt::alloc::handle_alloc_error(layout5);
+                        }
+                        ptr
+                    } else {
+                        ::core::ptr::null_mut()
+                    };
+                    for (i, e) in vec5.into_iter().enumerate() {
+                        let base = result5.add(i * 16);
+                        {
+                            let (t2_0, t2_1) = e;
+                            let vec3 = t2_0;
+                            let ptr3 = vec3.as_ptr().cast::<u8>();
+                            let len3 = vec3.len();
+                            *base.add(4).cast::<usize>() = len3;
+                            *base.add(0).cast::<*mut u8>() = ptr3.cast_mut();
+                            let vec4 = t2_1;
+                            let ptr4 = vec4.as_ptr().cast::<u8>();
+                            let len4 = vec4.len();
+                            *base.add(12).cast::<usize>() = len4;
+                            *base.add(8).cast::<*mut u8>() = ptr4.cast_mut();
+                        }
+                    }
+                    let (result7_0, result7_1, result7_2) = match body0 {
+                        Some(e) => {
+                            let vec6 = e;
+                            let ptr6 = vec6.as_ptr().cast::<u8>();
+                            let len6 = vec6.len();
+                            (1i32, ptr6.cast_mut(), len6)
+                        }
+                        None => (0i32, ::core::ptr::null_mut(), 0usize),
+                    };
+                    let ptr8 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "component:units/http")]
+                    extern "C" {
+                        #[link_name = "send-request"]
+                        fn wit_import(
+                            _: i32,
+                            _: *mut u8,
+                            _: usize,
+                            _: *mut u8,
+                            _: usize,
+                            _: i32,
+                            _: *mut u8,
+                            _: usize,
+                            _: *mut u8,
+                        );
+                    }
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(
+                        _: i32,
+                        _: *mut u8,
+                        _: usize,
+                        _: *mut u8,
+                        _: usize,
+                        _: i32,
+                        _: *mut u8,
+                        _: usize,
+                        _: *mut u8,
+                    ) {
+                        unreachable!()
+                    }
+                    wit_import(
+                        method0.clone() as i32,
+                        ptr1.cast_mut(),
+                        len1,
+                        result5,
+                        len5,
+                        result7_0,
+                        result7_1,
+                        result7_2,
+                        ptr8,
+                    );
+                    let l9 = i32::from(*ptr8.add(0).cast::<u16>());
+                    let l10 = *ptr8.add(4).cast::<*mut u8>();
+                    let l11 = *ptr8.add(8).cast::<usize>();
+                    let base18 = l10;
+                    let len18 = l11;
+                    let mut result18 = _rt::Vec::with_capacity(len18);
+                    for i in 0..len18 {
+                        let base = base18.add(i * 16);
+                        let e18 = {
+                            let l12 = *base.add(0).cast::<*mut u8>();
+                            let l13 = *base.add(4).cast::<usize>();
+                            let len14 = l13;
+                            let bytes14 = _rt::Vec::from_raw_parts(
+                                l12.cast(),
+                                len14,
+                                len14,
+                            );
+                            let l15 = *base.add(8).cast::<*mut u8>();
+                            let l16 = *base.add(12).cast::<usize>();
+                            let len17 = l16;
+                            let bytes17 = _rt::Vec::from_raw_parts(
+                                l15.cast(),
+                                len17,
+                                len17,
+                            );
+                            (_rt::string_lift(bytes14), _rt::string_lift(bytes17))
+                        };
+                        result18.push(e18);
+                    }
+                    _rt::cabi_dealloc(base18, len18 * 16, 4);
+                    let l19 = *ptr8.add(12).cast::<*mut u8>();
+                    let l20 = *ptr8.add(16).cast::<usize>();
+                    let len21 = l20;
+                    let bytes21 = _rt::Vec::from_raw_parts(l19.cast(), len21, len21);
+                    if layout5.size() != 0 {
+                        _rt::alloc::dealloc(result5.cast(), layout5);
+                    }
+                    Response {
+                        status: l9 as u16,
+                        headers: result18,
+                        body: _rt::string_lift(bytes21),
+                    }
+                }
+            }
+        }
+        #[allow(dead_code, clippy::all)]
         pub mod storage {
             #[used]
             #[doc(hidden)]
@@ -945,12 +1167,20 @@ pub mod exports {
 mod _rt {
     pub use alloc_crate::string::String;
     pub use alloc_crate::vec::Vec;
+    pub use alloc_crate::alloc;
     pub unsafe fn string_lift(bytes: Vec<u8>) -> String {
         if cfg!(debug_assertions) {
             String::from_utf8(bytes).unwrap()
         } else {
             String::from_utf8_unchecked(bytes)
         }
+    }
+    pub unsafe fn cabi_dealloc(ptr: *mut u8, size: usize, align: usize) {
+        if size == 0 {
+            return;
+        }
+        let layout = alloc::Layout::from_size_align_unchecked(size, align);
+        alloc::dealloc(ptr, layout);
     }
     pub unsafe fn invalid_enum_discriminant<T>() -> T {
         if cfg!(debug_assertions) {
@@ -963,15 +1193,7 @@ mod _rt {
     pub fn run_ctors_once() {
         wit_bindgen_rt::run_ctors_once();
     }
-    pub unsafe fn cabi_dealloc(ptr: *mut u8, size: usize, align: usize) {
-        if size == 0 {
-            return;
-        }
-        let layout = alloc::Layout::from_size_align_unchecked(size, align);
-        alloc::dealloc(ptr, layout);
-    }
     extern crate alloc as alloc_crate;
-    pub use alloc_crate::alloc;
 }
 /// Generates `#[no_mangle]` functions to export the specified type as the
 /// root implementation of all generated traits.
@@ -1006,21 +1228,25 @@ pub(crate) use __export_driver_world_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.36.0:component:units:driver-world:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 613] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe2\x03\x01A\x02\x01\
-A\x04\x01B\x08\x01q\x05\x09not-found\x01s\0\x0binvalid-key\x01s\0\x0csystem-erro\
-r\x01s\0\x11permission-denied\x01s\0\x0dunknown-error\x01s\0\x04\0\x0dstorage-er\
-ror\x03\0\0\x01j\x01s\x01\x01\x01@\x01\x03keys\0\x02\x04\0\x03get\x01\x03\x01j\0\
-\x01\x01\x01@\x02\x03keys\x05values\0\x04\x04\0\x03set\x01\x05\x03\0\x17componen\
-t:units/storage\x05\0\x01B\x0e\x01q\x04\x11permission-denied\x01s\0\x0csystem-er\
-ror\x01s\0\x0dinvalid-input\x01s\0\x0dunknown-error\x01s\0\x04\0\x0cdriver-error\
-\x03\0\0\x01j\x01s\x01\x01\x01@\x01\x05inputs\0\x02\x04\0\x06intend\x01\x03\x01j\
-\0\x01\x01\x01@\x01\x05inputs\0\x04\x04\0\x04done\x01\x05\x01@\x03\x03fros\x02to\
-s\x05values\0\x04\x04\0\x08transfer\x01\x06\x04\0\x04view\x01\x03\x01ks\x01@\x02\
-\x05inputs\x08existing\x07\0\x02\x04\0\x04bind\x01\x08\x04\0\x16component:units/\
-driver\x05\x01\x04\0\x1ccomponent:units/driver-world\x04\0\x0b\x12\x01\0\x0cdriv\
-er-world\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.2\
-20.0\x10wit-bindgen-rust\x060.36.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 802] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x9f\x05\x01A\x02\x01\
+A\x06\x01B\x0b\x01m\x04\x03get\x04post\x03put\x06delete\x04\0\x06method\x03\0\0\x01\
+o\x02ss\x01p\x02\x01ks\x01r\x04\x06method\x01\x03urls\x07headers\x03\x04body\x04\
+\x04\0\x07request\x03\0\x05\x01r\x03\x06status{\x07headers\x03\x04bodys\x04\0\x08\
+response\x03\0\x07\x01@\x01\x07request\x06\0\x08\x04\0\x0csend-request\x01\x09\x03\
+\0\x14component:units/http\x05\0\x01B\x08\x01q\x05\x09not-found\x01s\0\x0binvali\
+d-key\x01s\0\x0csystem-error\x01s\0\x11permission-denied\x01s\0\x0dunknown-error\
+\x01s\0\x04\0\x0dstorage-error\x03\0\0\x01j\x01s\x01\x01\x01@\x01\x03keys\0\x02\x04\
+\0\x03get\x01\x03\x01j\0\x01\x01\x01@\x02\x03keys\x05values\0\x04\x04\0\x03set\x01\
+\x05\x03\0\x17component:units/storage\x05\x01\x01B\x0e\x01q\x04\x11permission-de\
+nied\x01s\0\x0csystem-error\x01s\0\x0dinvalid-input\x01s\0\x0dunknown-error\x01s\
+\0\x04\0\x0cdriver-error\x03\0\0\x01j\x01s\x01\x01\x01@\x01\x05inputs\0\x02\x04\0\
+\x06intend\x01\x03\x01j\0\x01\x01\x01@\x01\x05inputs\0\x04\x04\0\x04done\x01\x05\
+\x01@\x03\x03fros\x02tos\x05values\0\x04\x04\0\x08transfer\x01\x06\x04\0\x04view\
+\x01\x03\x01ks\x01@\x02\x05inputs\x08existing\x07\0\x02\x04\0\x04bind\x01\x08\x04\
+\0\x16component:units/driver\x05\x02\x04\0\x1ccomponent:units/driver-world\x04\0\
+\x0b\x12\x01\0\x0cdriver-world\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0d\
+wit-component\x070.220.0\x10wit-bindgen-rust\x060.36.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {
