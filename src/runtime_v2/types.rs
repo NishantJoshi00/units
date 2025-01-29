@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::{mpsc, Arc};
 
 use wasmtime_wasi::preview1::WasiP1Ctx;
+use wasmtime_wasi_http::WasiHttpCtx;
 
 use super::driver::{self, DriverInfo};
 use super::platform::Platform;
@@ -114,7 +115,9 @@ pub struct DriverState {
     pub driver_ctx: DriverCtx,
     pub platform: Platform,
     pub event_sender: Arc<mpsc::Sender<Event>>,
-    pub wasi: WasiP1Ctx,
+    wasi: wasmtime_wasi::WasiCtx,
+    http: WasiHttpCtx,
+    table: wasmtime_wasi::ResourceTable,
 }
 
 impl ProcessState {
@@ -215,6 +218,8 @@ impl ProcessState {
                 "Failed while adding WASI to linker".to_string(),
             )
         })?;
+
+
         wasmtime_wasi_http::add_to_linker_sync(&mut linker).map_err(|_| {
             component::module::component::units::driver::DriverError::SystemError(
                 "Failed while adding WASI HTTP to linker".to_string(),
@@ -404,20 +409,33 @@ impl DriverState {
             driver_ctx,
             platform,
             event_sender,
-            wasi: wasmtime_wasi::WasiCtxBuilder::new().build_p1(),
+            wasi: wasmtime_wasi::WasiCtxBuilder::new().build(),
+            http: WasiHttpCtx::new(),
+            table: wasmtime_wasi::ResourceTable::default(),
         }
     }
 }
 
 impl wasmtime_wasi::WasiView for DriverState {
     fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
-        self.wasi.table()
+        &mut self.table
     }
 
     fn ctx(&mut self) -> &mut wasmtime_wasi::WasiCtx {
-        self.wasi.ctx()
+        &mut self.wasi
     }
 }
+
+impl wasmtime_wasi_http::WasiHttpView for DriverState {
+    fn ctx(&mut self) -> &mut WasiHttpCtx {
+        &mut self.http
+    }
+
+    fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
+        &mut self.table
+    }
+}
+
 
 impl wasmtime_wasi::WasiView for ProcessState {
     fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
