@@ -29,7 +29,7 @@ impl Guest for Component {
         driver::done(&p1).map_err(|e| bindings::UserError::UnknownError(e.to_string()))?;
         driver::done(&p2).map_err(|e| bindings::UserError::UnknownError(e.to_string()))?;
 
-        Ok("done".to_string())
+        Ok("transfer completed".to_string())
     }
 }
 

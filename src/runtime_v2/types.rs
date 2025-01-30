@@ -333,7 +333,7 @@ impl ProcessState {
                                 "Failed to lock mount points".to_string(),
                             )
                         })?;
-
+                        println!("the pathinfo is {:?}",path_info);
                 writer.insert(path.clone(), path_info);
             }
             Some(existing) => {
@@ -388,6 +388,7 @@ impl ProcessState {
                                 "Failed to lock mount points".to_string(),
                             )
                         })?;
+                println!("the pathinfo is {:?}",path_info);
                 writer.insert(path.clone(), path_info);
             }
         }

@@ -18,16 +18,16 @@ impl Guest for Component {
         let p1_data = driver::view(&p1)
             .map_err(|e| bindings::UserError::SystemError(format!("Failed to view data: {}", e)))?;
 
-        let p1_d = serde_json::from_str::<MoreData>(&p1_data).map_err(|e| {
-            bindings::UserError::SystemError(format!("Failed to parse data: {}", e))
-        })?;
+        // let p1_d = serde_json::from_str::<MoreData>(&p1_data).map_err(|e| {
+        //     bindings::UserError::SystemError(format!("Failed to parse data: {}", e))
+        // })?;
 
-        let data = ViewData {
-            data: p1_d,
-            path: input.path.clone(),
-        };
+        // let data = ViewData {
+        //     data: p1_d,
+        //     path: input.path.clone(),
+        // };
 
-        let data = serde_json::to_string(&data).map_err(|e| {
+        let data = serde_json::to_string(&p1_data).map_err(|e| {
             bindings::UserError::SystemError(format!("Failed to serialize data: {}", e))
         })?;
 
