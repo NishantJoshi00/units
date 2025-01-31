@@ -7,15 +7,8 @@ use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 use urlencoding::encode;
-// use reqwest::blocking::Client; // Use the blocking client
-// use std::error::Error;
-// use wasi_experimental_http;// No need to import http here
-// use http;
-// use std::str::from_utf8;
-// use bytes::Bytes;
-// use waki::Client;
+
 
 struct Component;
 
