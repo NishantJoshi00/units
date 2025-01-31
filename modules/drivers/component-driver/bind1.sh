@@ -9,3 +9,4 @@ grpcurl -plaintext -d @ localhost:8080 finternet.Bind/Bind <<EOM
 }
 EOM
 
+# {"name": "John Doe", "amount": 30}

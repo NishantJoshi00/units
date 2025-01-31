@@ -1,0 +1,39 @@
+package component:units;
+
+interface driver {
+    variant driver-error {
+        permission-denied(string),
+        system-error(string), 
+        invalid-input(string),
+        unknown-error(string)
+    }
+    intend: func(input: string) -> result<string, driver-error>;
+    done: func(input: string) -> result<_, driver-error>;
+    transfer: func(fro: string, to: string, value: string) -> result<_, driver-error>; 
+    view: func(input: string) -> result<string, driver-error>;
+    bind: func(input: string, existing: option<string>) -> result<string, driver-error>;
+}
+
+interface http {
+    enum method {
+        get,
+        post,
+        put,
+        delete
+    }
+
+    record request {
+        method: method,
+        url: string,
+        headers: list<tuple<string, string>>,
+        body: option<string>
+    }
+
+    record response {
+        status: u16,
+        headers: list<tuple<string, string>>,
+        body: string
+    }
+
+    send-request: func(request: request) -> response;
+}

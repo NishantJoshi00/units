@@ -333,7 +333,6 @@ impl ProcessState {
                                 "Failed to lock mount points".to_string(),
                             )
                         })?;
-
                 writer.insert(path.clone(), path_info);
             }
             Some(existing) => {

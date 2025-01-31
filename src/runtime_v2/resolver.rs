@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct PathInfo {
     pub driver_name: String,
     pub driver_version: String,

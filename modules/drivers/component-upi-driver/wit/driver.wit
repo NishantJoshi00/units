@@ -1,0 +1,19 @@
+package component:units;
+
+interface storage {
+    variant storage-error {
+        not-found(string),
+        invalid-key(string), 
+        system-error(string),
+        permission-denied(string),
+        unknown-error(string)
+    }
+    get: func(key: string) -> result<string, storage-error>;
+    set: func(key: string, value: string) -> result<_, storage-error>;
+}
+
+world driver-world {
+    export driver;
+    import http;
+    import storage;
+}
