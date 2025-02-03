@@ -44,6 +44,7 @@ nanoid = "0.4.0"
 redis = { version = "*" }
 
 ureq = "3.0.2"
+dyn-clone = "1.0.18"
 
 [build-dependencies]
 cargo_metadata = "0.15.4"

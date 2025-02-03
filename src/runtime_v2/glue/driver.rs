@@ -26,7 +26,6 @@ impl Host for DriverState {
 
 mod http_impl {
 
-    use surf::Status;
 
     use crate::runtime_v2::types::DriverState;
     use crate::runtime_v2::types::{component::driver::component::units::*};

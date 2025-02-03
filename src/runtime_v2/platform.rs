@@ -1,13 +1,20 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
-
+use dyn_clone::DynClone;
 use crate::runtime_v2::integration;
+mod users;
 
 use super::types;
+
+pub trait Persistance: DynClone + Send + Sync + users::Users {}
+dyn_clone::clone_trait_object!(Persistance);
+
+impl Persistance for () {}
 
 #[derive(Clone)]
 pub struct Platform {
     pub storage: Storage,
+    pub persistance: Box<dyn Persistance>
 }
 
 #[derive(Clone, Debug)]
@@ -26,6 +33,7 @@ impl Platform {
                 redis: Arc::new(Mutex::new(redis::Client::open("redis://127.0.0.1/")?)),
                 kev: Arc::new(RwLock::new(HashMap::new())),
             },
+            persistance: Box::new(()),
         })
     }
 }
