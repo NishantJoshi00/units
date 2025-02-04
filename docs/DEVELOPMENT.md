@@ -92,6 +92,14 @@ impl component::units::driver::Guest for Component {
 }
 ```
 
+3. Build the driver:
+```bash
+cargo component build --release
+# The driver will be available in the `target/wasm32-wasip1/release`
+```
+
+
+
 ## Module Development
 
 ### Module Capabilities
@@ -135,6 +143,13 @@ impl component::units::module::Guest for Component {
     }
 }
 ```
+
+3. Build the module:
+```bash
+cargo component build --release
+# The module will be available in the `target/wasm32-wasip1/release`
+```
+
 
 ## Requesting New Capabilities
 

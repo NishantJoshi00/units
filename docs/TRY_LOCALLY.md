@@ -29,7 +29,7 @@ cd finternet-runtime
 Create your local configuration:
 ```bash
 # Copy default configuration
-cp config/development.toml config/local.toml
+cp config/development.toml config/development.toml
 ```
 
 The default configuration provides:
@@ -51,10 +51,10 @@ cargo build --release --no-default-features
 Start the server:
 ```bash
 # Basic start
-cargo run --release -- config/local.toml
+cargo run --release -- config/development.toml
 
 # With debug logging
-RUST_LOG=debug cargo run -- config/local.toml
+RUST_LOG=debug cargo run -- config/development.toml
 ```
 
 ### 4. Verify Installation
