@@ -2,9 +2,7 @@
 
 <div align="center">
 
-<a href="https://finternetlab.io/">
-  <img src="https://finternetlab.io/images/headers/finternet_logo_for_website-transformed1.png" alt="Finternet" height="46">
-</a>
+<img src="https://finternetlab.io/images/headers/finternet_logo_for_website-transformed1.png" alt="Finternet" height="46">
 
 [![Rust](https://img.shields.io/badge/rust-1.75+-93450a.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -12,30 +10,12 @@
 
 A modular and extensible WebAssembly runtime system for financial transactions and asset management
 
-[Website](https://finternetlab.io/) •
 [Architecture](#architecture) •
 [Quick Start](#quick-start) •
 [Documentation](#documentation) •
 [Contributing](#contributing)
 
 </div>
-
-## Overview
-
-Finternet Runtime is a three-tier architecture system that provides:
-
-1. **Process Layer**: Direct user interaction layer for executing workflows (WebAssembly modules)
-2. **Driver Layer**: Intermediary layer providing abstraction over platform-specific operations
-3. **Platform Layer**: Low-level system access and services integration
-
-Key Features:
-- 📦 WebAssembly Component Model support
-- 🔌 Dynamic driver loading/unloading
-- 💾 Pluggable storage backends (Redis, in-memory)
-- ⛓️ Solana blockchain integration
-- 🌐 gRPC/gRPC-Web API interface
-- 🔍 Built-in health checks and metrics
-- ⚡ WASI support
 
 ## Overview
 
