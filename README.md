@@ -57,10 +57,10 @@ Key Features:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/finternet-runtime.git
+git clone https://github.com/NishantJoshi00/units.git
 
 # Enter the directory
-cd finternet-runtime
+cd units
 
 # Build the project
 cargo build --release
@@ -108,12 +108,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- 📝 [Open an issue](https://github.com/yourusername/finternet-runtime/issues)
-- 💬 [Start a discussion](https://github.com/yourusername/finternet-runtime/discussions)
+- 📝 [Open an issue](https://github.com/NishantJoshi00/units/issues)
+- 💬 [Start a discussion](https://github.com/NishantJoshi00/units/discussions)
 - 🔍 [Browse documentation](docs/)
 
 ---
 
 <div align="center">
-Made with ❤️ by the Finternet Runtime Team
+Made with ❤️ by the UNITS Team
 </div>

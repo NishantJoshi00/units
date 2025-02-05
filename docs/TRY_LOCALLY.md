@@ -1,6 +1,6 @@
-# Try Finternet Runtime Locally
+# Try UNITS Locally
 
-This guide will help you set up and run Finternet Runtime in your local environment.
+This guide will help you set up and run UNITS in your local environment.
 
 ## Prerequisites
 

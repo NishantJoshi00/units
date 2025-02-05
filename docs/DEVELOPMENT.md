@@ -1,6 +1,6 @@
 # Development Guidelines
 
-This guide covers development practices for Finternet Runtime components and how to request new capabilities.
+This guide covers development practices for UNITS components and how to request new capabilities.
 
 ## Table of Contents
 

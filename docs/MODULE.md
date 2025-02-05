@@ -1,4 +1,4 @@
-# Finternet Runtime
+# UNITS
 
 <div align="center">
 
@@ -19,7 +19,7 @@ A modular and extensible WebAssembly runtime system for financial transactions a
 
 ## Overview
 
-Finternet Runtime is a three-tier runtime system that provides:
+UNITS is a three-tier runtime system that provides:
 
 - **Process Layer**: Direct user interaction for executing workflows
 - **Driver Layer**: Asset abstraction and platform operations
@@ -54,21 +54,21 @@ cargo run --release -- config/development.toml
 Our documentation is organized into three main sections:
 
 ### [📐 Architecture](docs/ARCHITECTURE.md)
-Detailed explanation of Finternet Runtime's design and components:
+Detailed explanation of UNITS's design and components:
 - Three-tier architecture
 - System flow and interactions
 - Security model
 - Extension points
 
 ### [🚀 Try Locally](docs/TRY_LOCALLY.md)
-Get started with running Finternet Runtime:
+Get started with running UNITS:
 - Prerequisites and setup
 - Configuration options
 - Quick test guide
 - Development tips
 
 ### [📚 Development Guidelines](docs/DEVELOPMENT.md)
-Learn how to develop for Finternet Runtime:
+Learn how to develop for UNITS:
 - Driver development
 - Module development
 - Best practices
@@ -95,5 +95,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 <div align="center">
-Made with ❤️ by the Finternet Runtime Team
+Made with ❤️ by the UNITS Team
 </div>

@@ -1,8 +1,8 @@
-# Finternet Runtime Architecture
+# UNITS Architecture
 
 ## Overview
 
-Finternet Runtime is a modular and extensible runtime system for executing WebAssembly components with a focus on financial transactions and asset management. The system is designed with clear separation of concerns, modularity, and extensibility in mind.
+UNITS is a modular and extensible runtime system for executing WebAssembly components with a focus on financial transactions and asset management. The system is designed with clear separation of concerns, modularity, and extensibility in mind.
 
 ## Core Features
 
