@@ -133,3 +133,4 @@ message DriverDetailsResponse{
     string message = 1;
     repeated DriverDetail driver_data = 2;
 }
+

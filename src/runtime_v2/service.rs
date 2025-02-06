@@ -1,20 +1,35 @@
-use tonic::{Request, Response};
+use tonic::{Request,Status, Response};
+use tonic::metadata::MetadataValue;
+use jsonwebtoken::{encode, decode, EncodingKey, Header, DecodingKey, Validation};
+use serde::{Serialize, Deserialize};
+use std::time::{SystemTime, UNIX_EPOCH};
+use std::error::Error;
 
 use crate::runtime_v2::driver::DriverInfo;
 use crate::runtime_v2::types::ProcessState;
 use crate::runtime_v2::types::UserCtx;
 use crate::service::proto_types::DriverDetail;
-
 use super::Runtime;
-
+use super::platform::users::User;
 mod server_traits {
     pub use crate::service::proto_types::{
         bind_server::Bind,
         driver_details_server::DriverDetails, // for driver details
         driver_server::Driver,
         execution_server::Execution,
+        user_sign_up_server::UserSignUp,
+        user_login_server::UserLogin,
     };
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Claims {
+    user_id: String,
+    username: String, 
+    exp: usize,   
+    iat: usize,   
+}
+
 
 mod types {
     pub use crate::service::proto_types::{BindRequest, BindResponse};
@@ -26,7 +41,41 @@ mod types {
     pub use crate::service::proto_types::{SubmitProgramRequest, SubmitProgramResponse};
     pub use crate::service::proto_types::{UnbindRequest, UnbindResponse};
     pub use crate::service::proto_types::{UnloadDriverRequest, UnloadDriverResponse};
-    //for sending all driver details
+    pub use crate::service::proto_types::{SignUpRequest,SignUpResponse};
+    pub use crate::service::proto_types::{LoginRequest,LoginResponse};
+}
+
+fn get_user_id<T>(request:&Request<T>)->Result<String,Box<dyn Error>>{
+    let token = match request.metadata().get("set-cookie") {
+        Some(token) => token.to_str()
+            .map(|s| s.trim().to_string())
+            .unwrap_or_else(|_| "Invalid token".to_string()),
+        None => return Err(Box::new(Status::unauthenticated("No JWT token found"))),
+    };
+    
+    let secret = b"finternet";
+    let claims = decode::<Claims>(
+        &token,
+        &DecodingKey::from_secret(secret),
+        &Validation::default(),
+    );
+
+    match claims {
+        Ok(claims) => {
+            let current_time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(); // Get current time in seconds
+            if claims.claims.exp < current_time as usize {
+                return Err("Invalid or expired token".to_string().into());// Expired token
+            } else {
+                return Ok(claims.claims.user_id.to_string()); // Return user ID if valid
+            }
+        }
+        Err(_err) => {
+            return Err("Invalid or expired token".to_string().into());
+        }
+    };
 }
 
 #[tonic::async_trait]
@@ -35,8 +84,9 @@ impl server_traits::Execution for super::Runtime {
         &self,
         request: Request<types::ExecutionRequest>,
     ) -> Result<Response<types::ExecutionResponse>, tonic::Status> {
+        let user_id= get_user_id(&request).map_err(|e| tonic::Status::internal(e.to_string()))?;
         let request = request.into_inner();
-        let output = execte(self.clone(), request)
+        let output = execte(self.clone(), request,user_id)
             .inspect_err(|err| {
                 tracing::error!(error = ?err, "Execution failed");
             })
@@ -87,6 +137,7 @@ impl server_traits::Execution for super::Runtime {
 fn execte(
     runtime: Runtime,
     request: types::ExecutionRequest,
+    user_id: String,
 ) -> anyhow::Result<types::ExecutionResponse> {
     let component = match (request.program_id, request.binary) {
         (Some(program_id), None) => runtime
@@ -101,10 +152,9 @@ fn execte(
             anyhow::bail!("Either program_id or binary should be provided (but not both)")
         }
     };
-
     let output = runtime.exec(
         super::types::UserCtx {
-            user_id: "root".to_string(),
+            user_id: user_id.to_string(),
         },
         component,
         request.input,
@@ -119,20 +169,28 @@ impl server_traits::Bind for super::Runtime {
         &self,
         request: Request<types::BindRequest>,
     ) -> Result<Response<types::BindResponse>, tonic::Status> {
+        let user_id= get_user_id(&request).map_err(|e| tonic::Status::internal(e.to_string()))?;
         let request = request.into_inner();
 
         let mut process_state = ProcessState::new(
             UserCtx {
-                user_id: "root".to_string(),
+                user_id: user_id.to_string(),
             },
             self.driver_layer.clone(),
             self.platform_layer.clone(),
             self.event_sender.clone(),
         );
 
+        let path = if let Some(suffix) = request.path.strip_prefix("~/") {
+            format!("/accounts/{}/{}", user_id, suffix)
+        } else {
+            request.path.clone()
+        };
+        
+        
         process_state
             .perform_bind(
-                request.path.clone(),
+                path,
                 DriverInfo {
                     name: request.driver_name.clone(),
                     version: request.driver_version.clone(),
@@ -155,6 +213,9 @@ impl server_traits::Bind for super::Runtime {
         &self,
         request: Request<types::UnbindRequest>,
     ) -> Result<Response<types::UnbindResponse>, tonic::Status> {
+
+        let user_id= get_user_id(&request).map_err(|e| tonic::Status::internal(e.to_string()))?;
+
         let mut writer = self
             .driver_layer
             .resolver
@@ -163,7 +224,14 @@ impl server_traits::Bind for super::Runtime {
             .map_err(|_| tonic::Status::internal("Failed to lock mount points".to_string()))?;
 
         let request = request.into_inner();
-        let output = writer.remove(&request.path);
+
+        let path = if let Some(suffix) = request.path.strip_prefix("~/") {
+            format!("/accounts/{}/{}", user_id, suffix)
+        } else {
+            request.path.clone()
+        };
+
+        let output = writer.remove(&path);
 
         match output {
             None => Err(tonic::Status::not_found("Path not found")),
@@ -282,5 +350,93 @@ impl server_traits::DriverDetails for super::Runtime {
             message,
             driver_data: all_driver_details,
         }))
+    }
+}
+
+#[tonic::async_trait]
+impl server_traits::UserSignUp for super::Runtime {
+    async fn sign_up(
+        &self,
+        request: Request<types::SignUpRequest>,
+    ) -> Result<Response<types::SignUpResponse>, tonic::Status> {
+        let request = request.into_inner();
+        let mut hasher = blake3::Hasher::new();
+        hasher.update(request.password.as_bytes()); 
+        let hash_pass = hasher.finalize(); 
+        let user=User{
+            user_id:String::from("root"),
+            username:request.username.clone()
+        };
+        let _=self.platform_layer.persistance.create_user(user, &hash_pass);
+        let message=format!("{} has signed up successfully",request.username);
+        Ok(tonic::Response::new(types::SignUpResponse {
+            message,
+        }))
+    }
+}
+
+#[tonic::async_trait]
+impl server_traits::UserLogin for super::Runtime {
+    async fn login(
+        &self,
+        request: Request<types::LoginRequest>,
+    ) -> Result<Response<types::LoginResponse>, tonic::Status> {
+        let request = request.into_inner();
+        let mut hasher = blake3::Hasher::new();
+        hasher.update(request.password.as_bytes());
+        let hash_pass = hasher.finalize();
+
+        let user=self.platform_layer.persistance.get_user(&request.username, &hash_pass);
+        
+        let (message, set_cookie) = match user {
+            Ok(Some(user)) => {
+                    let expiration = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs() as usize + 60; 
+        
+                    let claims = Claims {
+                        username: request.username.clone(),
+                        user_id: user.user_id,
+                        exp: expiration,
+                        iat: SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs() as usize,
+                    };
+        
+                    let secret = b"finternet";
+                    
+                    let token = encode(
+                        &Header::default(),
+                        &claims,
+                        &EncodingKey::from_secret(secret)
+                    ).map_err(|_| Status::internal("Failed to create token"))?;
+        
+                    let cookie = format!(
+                        "{}",
+                        token
+                    );
+                    
+                    (
+                        format!("{} has logged in successfully", request.username),
+                        Some(cookie)
+                    )
+                } 
+            Ok(None) => (String::from("User not found"), None),
+            Err(_) => (String::from("Error retrieving user"), None),
+        };
+
+        let mut response = Response::new(types::LoginResponse { message });
+        
+        if let Some(cookie_value) = set_cookie {
+            response.metadata_mut().insert(
+                "set-cookie",
+                MetadataValue::try_from(&cookie_value)
+                    .map_err(|_| Status::internal("Failed to create cookie metadata"))?
+            );
+        }
+
+        Ok(response)
     }
 }

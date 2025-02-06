@@ -11,7 +11,14 @@ impl units::driver::Host for types::ProcessState {
             call = "intend",
             input = input.as_str()
         );
-        let path_info = self.get_path_info(input)?;
+        
+        let path = if let Some(suffix) = input.strip_prefix("~/") {
+            format!("/accounts/{}/{}", self.ctx.user_id, suffix)
+        } else {
+            input.clone()
+        };
+
+        let path_info = self.get_path_info(path)?;
 
         let driver_info = DriverInfo {
             name: path_info.driver_name.clone(),

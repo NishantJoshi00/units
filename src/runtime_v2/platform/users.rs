@@ -1,11 +1,11 @@
 pub trait Users {
-    fn get_user(&self, username: &str, password: &str) -> anyhow::Result<Option<User>>;
+    fn get_user(&self, username: &str, password: &blake3::Hash) -> anyhow::Result<Option<User>>;
     fn validate_user_id(&self, user_id: &str) -> anyhow::Result<bool>;
-    fn create_user(&self, user: User, password: &str) -> anyhow::Result<bool>;
+    fn create_user(&self, user: User, password: &blake3::Hash) -> anyhow::Result<bool>;
 }
 
 impl Users for () {
-    fn get_user(&self, username: &str, _password: &str) -> anyhow::Result<Option<User>> {
+    fn get_user(&self, username: &str, _password: &blake3::Hash) -> anyhow::Result<Option<User>> {
         Ok(Some(User {
             user_id: "root".to_string(),
             username: username.to_string(),
@@ -16,9 +16,10 @@ impl Users for () {
         Ok(true)
     }
 
-    fn create_user(&self, user: User, _password: &str) -> anyhow::Result<bool> {
+    fn create_user(&self, user: User, _password: &blake3::Hash) -> anyhow::Result<bool> {
         Ok(true)
     }
 }
 
-pub struct User { user_id: String, username: String, }
+#[derive(serde::Deserialize)]
+pub struct User { pub user_id: String, pub username: String, }

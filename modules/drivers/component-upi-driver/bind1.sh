@@ -9,3 +9,8 @@ grpcurl -plaintext -d @ localhost:8080 finternet.Bind/Bind <<EOM
 }
 EOM
 
+# grpcurl -plaintext -d @ localhost:8080 finternet.PrintMessage/Print <<EOM
+# {
+#   "message":"hello grpc"
+# }
+# EOM

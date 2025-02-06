@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use urlencoding::encode;
+use std::env;
 
 
 struct Component;
@@ -134,7 +135,7 @@ struct Config {
 impl Config {
     fn new() -> Self {
         Config {
-            host: format!("http://{}:8030", env!("UPI_HOST")),
+            host: format!("http://{}:8030",env::var("UPI_HOST").unwrap()),
             uri: "n8".to_string(),
             merchant_id: "INTERNALTESTUAT".to_string(),
             channel_id: "INTERNALTESTUATAPP".to_string(),
@@ -609,10 +610,6 @@ fn send_money_p2p(config: &Config, callback_details_of_from_acc: &mut CallabckIn
 
     let response = http::send_request(&request);
     let body = response.body;
-    callback_details_of_from_acc.balance = 
-    (callback_details_of_from_acc.balance.parse::<i32>().unwrap() - amt.parse::<i32>().unwrap()).to_string();
-    callback_details_of_from_acc.balance = 
-    (callback_details_of_to_acc.balance.parse::<i32>().unwrap() + amt.parse::<i32>().unwrap()).to_string();
     Ok(())
 }
 
