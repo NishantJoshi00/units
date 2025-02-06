@@ -37,6 +37,7 @@ impl server_traits::Execution for super::Runtime {
     ) -> Result<Response<types::ExecutionResponse>, tonic::Status> {
         let request = request.into_inner();
         let output = execte(self.clone(), request)
+            .await
             .inspect_err(|err| {
                 tracing::error!(error = ?err, "Execution failed");
             })
@@ -54,6 +55,7 @@ impl server_traits::Execution for super::Runtime {
         let id = self
             .process_layer
             .store_program(request.name, request.version, component)
+            .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         Ok(Response::new(types::SubmitProgramResponse {
@@ -69,7 +71,8 @@ impl server_traits::Execution for super::Runtime {
             program: self
                 .process_layer
                 .programs
-                .list()
+                .list(self.process_layer.engine.clone())
+                .await
                 .map_err(|e| tonic::Status::internal(e.to_string()))?
                 .into_iter()
                 .map(|(id, program)| types::Program {
@@ -82,14 +85,15 @@ impl server_traits::Execution for super::Runtime {
     }
 }
 
-fn execte(
+async fn execte(
     runtime: Runtime,
     request: types::ExecutionRequest,
 ) -> anyhow::Result<types::ExecutionResponse> {
     let component = match (request.program_id, request.binary) {
         (Some(program_id), None) => runtime
             .process_layer
-            .find_program(&program_id)?
+            .find_program(&program_id, runtime.process_layer.engine.clone())
+            .await?
             .map(|prog| prog.component)
             .ok_or_else(|| anyhow::anyhow!("Program not found"))?,
         (None, Some(binary)) => {
@@ -100,13 +104,15 @@ fn execte(
         }
     };
 
-    let output = runtime.exec(
-        super::types::UserCtx {
-            user_id: "root".to_string(),
-        },
-        component,
-        request.input,
-    )?;
+    let output = runtime
+        .exec(
+            super::types::UserCtx {
+                user_id: "root".to_string(),
+            },
+            component,
+            request.input,
+        )
+        .await?;
 
     Ok(types::ExecutionResponse { output })
 }
@@ -137,6 +143,7 @@ impl server_traits::Bind for super::Runtime {
                 },
                 request.account_info.clone(),
             )
+            .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         let output = types::BindResponse {
@@ -154,7 +161,7 @@ impl server_traits::Bind for super::Runtime {
         request: Request<types::UnbindRequest>,
     ) -> Result<Response<types::UnbindResponse>, tonic::Status> {
         let request = request.into_inner();
-        let output = self.driver_layer.resolver.remove(&request.path);
+        let output = self.driver_layer.resolver.remove(&request.path).await;
 
         match output {
             None => Err(tonic::Status::not_found("Path not found")),
@@ -173,21 +180,22 @@ impl server_traits::Driver for super::Runtime {
         &self,
         _request: Request<types::ListResolverRequest>,
     ) -> Result<Response<types::ListResolverResponse>, tonic::Status> {
-        let output = self
-            .driver_layer
-            .resolver
-            .list()
-            .into_iter()
-            .map(|(path, path_info)| {
-                let path = path.clone();
-                let path_info = path_info.clone();
-                types::PathMapping {
-                    path,
-                    driver_name: path_info.driver_name,
-                    driver_version: path_info.driver_version,
-                    account_info: path_info.account_info,
-                }
-            });
+        let output =
+            self.driver_layer
+                .resolver
+                .list()
+                .await
+                .into_iter()
+                .map(|(path, path_info)| {
+                    let path = path.clone();
+                    let path_info = path_info.clone();
+                    types::PathMapping {
+                        path,
+                        driver_name: path_info.driver_name,
+                        driver_version: path_info.driver_version,
+                        account_info: path_info.account_info,
+                    }
+                });
 
         Ok(Response::new(types::ListResolverResponse {
             path_mapping: output.collect(),
@@ -213,6 +221,7 @@ impl server_traits::Driver for super::Runtime {
                 module,
                 request.driver_version.clone(),
             )
+            .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         Ok(tonic::Response::new(types::LoadDriverResponse {
@@ -234,6 +243,7 @@ impl server_traits::Driver for super::Runtime {
 
         self.driver_layer
             .remove_driver(driver_info)
+            .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         Ok(tonic::Response::new(types::UnloadDriverResponse {
@@ -252,7 +262,11 @@ impl server_traits::DriverDetails for super::Runtime {
         let mut all_driver_details = Vec::<DriverDetail>::new();
         let mut message = String::from("Drivers Detail list found!!");
         let reader = &self.driver_layer.drivers;
-        for (driver_info, _module) in reader.list().map_err(|e| tonic::Status::internal(e.to_string()))? {
+        for (driver_info, _module) in reader
+            .list(self.driver_layer.engine.clone())
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?
+        {
             let new_driver = DriverDetail {
                 name: driver_info.name.clone(),
                 version: driver_info.version.clone(),

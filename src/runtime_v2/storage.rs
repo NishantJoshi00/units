@@ -3,6 +3,8 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use tonic::async_trait;
+
 use super::{driver::DriverInfo, process::Program, resolver::PathInfo};
 
 #[derive(Clone, Default)]
@@ -17,39 +19,44 @@ mod private {
     impl<T: Send + Sync + 'static> Safety for T {}
 }
 
+#[async_trait]
 pub trait Resolver: dyn_clone::DynClone + private::Safety {
-    fn remove(&self, path: &str) -> Option<PathInfo>;
-    fn list(&self) -> Vec<(String, PathInfo)>;
-    fn get(&self, path: &str) -> Option<PathInfo>;
-    fn insert(&self, path: String, path_info: PathInfo) -> Option<()>;
+    async fn remove(&self, path: &str) -> Option<PathInfo>;
+    async fn list(&self) -> Vec<(String, PathInfo)>;
+    async fn get(&self, path: &str) -> Option<PathInfo>;
+    async fn insert(&self, path: String, path_info: PathInfo) -> Option<()>;
 }
 
+#[async_trait]
 pub trait ProgramStorage: dyn_clone::DynClone + private::Safety {
-    fn insert(&self, id: &str, program: super::process::Program) -> anyhow::Result<()>;
-    fn get(&self, id: &str) -> Result<Option<Program>, anyhow::Error>;
-    fn list(&self) -> Result<Vec<(String, Program)>, anyhow::Error>;
+    async fn insert(&self, id: &str, program: super::process::Program) -> anyhow::Result<()>;
+    async fn get(&self, id: &str, engine: wasmtime::Engine) -> Result<Option<Program>, anyhow::Error>;
+    async fn list(&self, engine: wasmtime::Engine) -> Result<Vec<(String, Program)>, anyhow::Error>;
 }
 
+#[async_trait]
 pub trait DriverStorage: dyn_clone::DynClone + private::Safety {
-    fn insert(
+    async fn insert(
         &self,
         driver_info: DriverInfo,
         module: wasmtime::component::Component,
     ) -> anyhow::Result<()>;
-    fn get(
+    async fn get(
         &self,
         driver_info: &DriverInfo,
+        engine: wasmtime::Engine,
     ) -> Result<Option<wasmtime::component::Component>, anyhow::Error>;
-    fn list(&self) -> Result<Vec<(DriverInfo, wasmtime::component::Component)>, anyhow::Error>;
-    fn remove(&self, driver_info: &DriverInfo) -> anyhow::Result<()>;
+    async fn list(&self, engine: wasmtime::Engine) -> Result<Vec<(DriverInfo, wasmtime::component::Component)>, anyhow::Error>;
+    async fn remove(&self, driver_info: &DriverInfo) -> anyhow::Result<()>;
 }
 
+#[async_trait]
 impl Resolver for PersistentStorage {
-    fn remove(&self, path: &str) -> Option<PathInfo> {
+    async fn remove(&self, path: &str) -> Option<PathInfo> {
         self.mount_points.write().ok()?.remove(path)
     }
 
-    fn list(&self) -> Vec<(String, PathInfo)> {
+    async fn list(&self) -> Vec<(String, PathInfo)> {
         self.mount_points
             .read()
             .unwrap()
@@ -58,25 +65,26 @@ impl Resolver for PersistentStorage {
             .collect()
     }
 
-    fn get(&self, path: &str) -> Option<PathInfo> {
+    async fn get(&self, path: &str) -> Option<PathInfo> {
         self.mount_points.read().ok()?.get(path).cloned()
     }
 
-    fn insert(&self, path: String, path_info: PathInfo) -> Option<()> {
+    async fn insert(&self, path: String, path_info: PathInfo) -> Option<()> {
         self.mount_points.write().ok()?.insert(path, path_info);
         Some(())
     }
 }
 
+#[async_trait]
 impl ProgramStorage for PersistentStorage {
-    fn insert(&self, id: &str, program: super::process::Program) -> anyhow::Result<()> {
+    async fn insert(&self, id: &str, program: super::process::Program) -> anyhow::Result<()> {
         self.programs
             .write()
             .map_err(|e| anyhow::anyhow!("Poisoned Lock {:?}", e))?
             .insert(id.to_string(), program);
         Ok(())
     }
-    fn get(&self, id: &str) -> Result<Option<Program>, anyhow::Error> {
+    async fn get(&self, id: &str, _engine: wasmtime::Engine) -> Result<Option<Program>, anyhow::Error> {
         Ok(self
             .programs
             .read()
@@ -84,7 +92,7 @@ impl ProgramStorage for PersistentStorage {
             .get(id)
             .cloned())
     }
-    fn list(&self) -> Result<Vec<(String, Program)>, anyhow::Error> {
+    async fn list(&self, _engine: wasmtime::Engine) -> Result<Vec<(String, Program)>, anyhow::Error> {
         Ok(self
             .programs
             .read()
@@ -95,8 +103,9 @@ impl ProgramStorage for PersistentStorage {
     }
 }
 
+#[async_trait]
 impl DriverStorage for PersistentStorage {
-    fn insert(
+    async fn insert(
         &self,
         driver_info: DriverInfo,
         module: wasmtime::component::Component,
@@ -107,9 +116,10 @@ impl DriverStorage for PersistentStorage {
             .insert(driver_info, module);
         Ok(())
     }
-    fn get(
+    async fn get(
         &self,
         driver_info: &DriverInfo,
+        _engine: wasmtime::Engine
     ) -> Result<Option<wasmtime::component::Component>, anyhow::Error> {
         Ok(self
             .drivers
@@ -119,7 +129,7 @@ impl DriverStorage for PersistentStorage {
             .cloned())
     }
 
-    fn list(&self) -> Result<Vec<(DriverInfo, wasmtime::component::Component)>, anyhow::Error> {
+    async fn list(&self, _engine: wasmtime::Engine) -> Result<Vec<(DriverInfo, wasmtime::component::Component)>, anyhow::Error> {
         Ok(self
             .drivers
             .read()
@@ -129,7 +139,7 @@ impl DriverStorage for PersistentStorage {
             .collect())
     }
 
-    fn remove(&self, driver_info: &DriverInfo) -> anyhow::Result<()> {
+    async fn remove(&self, driver_info: &DriverInfo) -> anyhow::Result<()> {
         self.drivers
             .write()
             .map_err(|e| anyhow::anyhow!("Poisoned Lock {:?}", e))?

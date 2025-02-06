@@ -1,4 +1,3 @@
-
 use super::storage::{DriverStorage, Resolver};
 use super::types;
 
@@ -27,20 +26,20 @@ impl DriverRuntime {
         })
     }
 
-    pub fn add_driver(
+    pub async fn add_driver(
         &self,
         name: String,
         module: wasmtime::component::Component,
         version: String,
     ) -> anyhow::Result<()> {
         let driver_info = DriverInfo { name, version };
-        self.drivers.insert(driver_info, module)?;
+        self.drivers.insert(driver_info, module).await?;
 
         Ok(())
     }
 
-    pub fn remove_driver(&self, driver_info: DriverInfo) -> anyhow::Result<()> {
-        self.drivers.remove(&driver_info)?;
+    pub async fn remove_driver(&self, driver_info: DriverInfo) -> anyhow::Result<()> {
+        self.drivers.remove(&driver_info).await?;
 
         Ok(())
     }

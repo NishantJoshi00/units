@@ -26,7 +26,7 @@ impl ProcessRuntime {
         })
     }
 
-    pub fn store_program(
+    pub async fn store_program(
         &self,
         name: String,
         version: String,
@@ -38,12 +38,12 @@ impl ProcessRuntime {
             component,
         };
         let id = crate::utils::id::new();
-        self.programs.insert(&id, program)?;
+        self.programs.insert(&id, program).await?;
 
         Ok(id)
     }
 
-    pub fn find_program(&self, id: &str) -> anyhow::Result<Option<Program>> {
-        self.programs.get(id)
+    pub async fn find_program(&self, id: &str, engine: wasmtime::Engine) -> anyhow::Result<Option<Program>> {
+        self.programs.get(id, engine).await
     }
 }

@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::{mpsc, Arc};
 
-use wasmtime_wasi::preview1::WasiP1Ctx;
-use wasmtime_wasi_http::WasiHttpCtx;
+// use wasmtime_wasi::preview1::WasiP1Ctx;
+use wasmtime_wasi::{WasiCtx, WasiView};
 
 use super::driver::{self, DriverInfo};
 use super::platform::Platform;
@@ -14,6 +14,7 @@ pub mod component {
             world: "driver-world",
             path: "wit",
             tracing: true,
+            async: true, 
         });
     }
 
@@ -22,6 +23,7 @@ pub mod component {
             world: "module-world",
             path: "wit",
             tracing: true,
+            async: true,
         });
     }
 }
@@ -100,7 +102,8 @@ pub struct ProcessState {
     pub platform: Platform,
     pub event_sender: Arc<mpsc::Sender<Event>>,
     pub descriptors: HashMap<String, Descriptor>,
-    pub wasi: WasiP1Ctx,
+    // table: ResourceTable,
+    // wasi_ctx: WasiCtx,
 }
 
 #[derive(Clone)]
@@ -115,9 +118,8 @@ pub struct DriverState {
     pub driver_ctx: DriverCtx,
     pub platform: Platform,
     pub event_sender: Arc<mpsc::Sender<Event>>,
-    wasi: wasmtime_wasi::WasiCtx,
-    http: WasiHttpCtx,
-    table: wasmtime_wasi::ResourceTable,
+    // table: ResourceTable,
+    // wasi_ctx: WasiCtx,
 }
 
 impl ProcessState {
@@ -133,31 +135,38 @@ impl ProcessState {
             platform,
             event_sender,
             descriptors: HashMap::new(),
-            wasi: wasmtime_wasi::WasiCtxBuilder::new().build_p1(),
+            // table: ResourceTable::new(),
+            // wasi_ctx: wasmtime_wasi::WasiCtxBuilder::new().build(),
         }
     }
 
-    pub fn get_path_info(
+    pub async fn get_path_info(
         &self,
         input: String,
     ) -> Result<super::resolver::PathInfo, component::module::component::units::driver::DriverError>
     {
-        let path_info = self.driver_runtime.resolver.get(input.as_str()).ok_or(
-            component::module::component::units::driver::DriverError::InvalidInput(
-                "Failed while resolving path".to_string(),
-            ),
-        )?;
+        let path_info = self
+            .driver_runtime
+            .resolver
+            .get(input.as_str())
+            .await
+            .ok_or(
+                component::module::component::units::driver::DriverError::InvalidInput(
+                    "Failed while resolving path".to_string(),
+                ),
+            )?;
         Ok(path_info)
     }
 
-    pub fn get_driver(
+    pub async fn get_driver(
         &self,
         input: &DriverInfo,
+        engine: wasmtime::Engine
     ) -> Result<
         wasmtime::component::Component,
         component::module::component::units::driver::DriverError,
     > {
-        let driver = self.driver_runtime.drivers.get(input).map_err(|_| {
+        let driver = self.driver_runtime.drivers.get(input, engine).await.map_err(|_| {
             component::module::component::units::driver::DriverError::InvalidInput(
                 "Failed while finding driver".to_string(),
             )
@@ -199,9 +208,9 @@ impl ProcessState {
                 )
             })?;
 
-        wasmtime_wasi::add_to_linker_sync(&mut linker).map_err(|e| {
-            component::module::component::units::driver::DriverError::SystemError(e.to_string())
-        })?;
+        // wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|e| {
+        //     component::module::component::units::driver::DriverError::SystemError(e.to_string())
+        // })?;
 
         // wasmtime_wasi_http::add_to_linker_sync(&mut linker).map_err(|e| {
         //     component::module::component::units::driver::DriverError::SystemError(e.to_string())
@@ -233,7 +242,7 @@ impl ProcessState {
         Ok(())
     }
 
-    pub fn perform_bind(
+    pub async fn perform_bind(
         &mut self,
         path: String,
         driver_info: DriverInfo,
@@ -243,7 +252,8 @@ impl ProcessState {
         if self
             .driver_runtime
             .drivers
-            .get(&driver_info)
+            .get(&driver_info, self.driver_runtime.engine.clone())
+            .await
             .map_err(|_| {
                 component::module::component::units::driver::DriverError::InvalidInput(
                     "Failed while finding driver".to_string(),
@@ -258,14 +268,15 @@ impl ProcessState {
             );
         }
 
-        let output = self.driver_runtime.resolver.get(path.as_str());
+        let output = self.driver_runtime.resolver.get(path.as_str()).await;
 
         match output {
             None => {
-                let driver = self.get_driver(&driver_info)?;
+                let driver = self.get_driver(&driver_info, self.driver_runtime.engine.clone()).await?;
                 let (linker, mut state) = self.get_lower_runtime(driver_info.clone())?;
                 let instance =
-                    component::driver::DriverWorld::instantiate(&mut state, &driver, &linker)
+                    component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker)
+                        .await
                         .map_err(|e| {
                             component::module::component::units::driver::DriverError::SystemError(
                                 e.to_string(),
@@ -275,6 +286,7 @@ impl ProcessState {
                 let output = instance
                     .component_units_driver()
                     .call_bind(state, &input, None)
+                    .await
                     .map_err(|_| {
                         component::module::component::units::driver::DriverError::SystemError(
                             "Failed while calling bind".to_string(),
@@ -292,7 +304,7 @@ impl ProcessState {
                     account_info: output,
                 };
 
-                self.driver_runtime.resolver.insert(path.clone(), path_info);
+                self.driver_runtime.resolver.insert(path.clone(), path_info).await;
             }
             Some(existing) => {
                 if existing.driver_name != driver_info.name
@@ -305,11 +317,12 @@ impl ProcessState {
                     );
                 }
 
-                let driver = self.get_driver(&driver_info)?;
+                let driver = self.get_driver(&driver_info, self.driver_runtime.engine.clone()).await?;
                 let (linker, mut state) = self.get_lower_runtime(driver_info.clone())?;
 
                 let instance =
-                    component::driver::DriverWorld::instantiate(&mut state, &driver, &linker)
+                    component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker)
+                        .await
                         .map_err(|e| {
                             component::module::component::units::driver::DriverError::SystemError(
                                 e.to_string(),
@@ -319,6 +332,7 @@ impl ProcessState {
                 let output = instance
                     .component_units_driver()
                     .call_bind(state, &input, Some(&existing.account_info))
+                    .await
                     .map_err(|_| {
                         component::module::component::units::driver::DriverError::SystemError(
                             "Failed while calling bind".to_string(),
@@ -336,7 +350,7 @@ impl ProcessState {
                     account_info: output,
                 };
 
-                self.driver_runtime.resolver.insert(path.clone(), path_info);
+                self.driver_runtime.resolver.insert(path.clone(), path_info).await;
             }
         }
         Ok(())
@@ -355,45 +369,57 @@ impl DriverState {
             driver_ctx,
             platform,
             event_sender,
-            wasi: wasmtime_wasi::WasiCtxBuilder::new().build(),
-            http: WasiHttpCtx::new(),
-            table: wasmtime_wasi::ResourceTable::default(),
+            // table: ResourceTable::new(),
+            // wasi_ctx: wasmtime_wasi::WasiCtxBuilder::new().build(),
         }
     }
 }
 
-impl wasmtime_wasi::WasiView for DriverState {
-    fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
-        &mut self.table
-    }
+// impl wasmtime_wasi::WasiView for DriverState {
+//     fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
+//         &mut self.table
+//     }
 
-    fn ctx(&mut self) -> &mut wasmtime_wasi::WasiCtx {
-        &mut self.wasi
-    }
-}
+//     fn ctx(&mut self) -> &mut wasmtime_wasi::WasiCtx {
+//         &mut self.wasi_ctx
+//     }
+// }
 
-impl wasmtime_wasi_http::WasiHttpView for DriverState {
-    fn ctx(&mut self) -> &mut WasiHttpCtx {
-        &mut self.http
-    }
+// impl wasmtime_wasi::WasiView for ProcessState {
+//     fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
+//         &mut self.table
+//     }
 
-    fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
-        &mut self.table
-    }
-}
-
-impl wasmtime_wasi::WasiView for ProcessState {
-    fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
-        self.wasi.table()
-    }
-
-    fn ctx(&mut self) -> &mut wasmtime_wasi::WasiCtx {
-        self.wasi.ctx()
-    }
-}
+//     fn ctx(&mut self) -> &mut wasmtime_wasi::WasiCtx {
+//         &mut self.wasi_ctx
+//     }
+// }
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::marker::PhantomData;
+
+    fn check_send<T>(ty: PhantomData<T>)
+    where
+        T: Send,
+    {}
+
+    fn check_sync<T>(ty: PhantomData<T>)
+    where
+        T: Sync,
+    {}
+
+    /*
+     */
+    #[test]
+    fn test_send() {
+        check_sync::<DriverState>(PhantomData);
+    }
 }
