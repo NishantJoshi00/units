@@ -16,7 +16,7 @@ impl Users for () {
         Ok(true)
     }
 
-    fn create_user(&self, user: User, _password: &str) -> anyhow::Result<bool> {
+    fn create_user(&self, _user: User, _password: &str) -> anyhow::Result<bool> {
         Ok(true)
     }
 }

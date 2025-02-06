@@ -42,6 +42,7 @@ surf = "2.3"
 nanoid = "0.4.0"
 
 redis = { version = "*" }
+sqlx = { version = "0.8.3", features = [ "sqlite", "runtime-tokio", "tls-native-tls" ] }
 
 ureq = "3.0.2"
 dyn-clone = "1.0.18"

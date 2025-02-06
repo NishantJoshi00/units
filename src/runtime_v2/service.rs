@@ -65,15 +65,13 @@ impl server_traits::Execution for super::Runtime {
         &self,
         _request: Request<types::ListProgramRequest>,
     ) -> Result<Response<types::ListProgramResponse>, tonic::Status> {
-        let programs = self
-            .process_layer
-            .programs
-            .read()
-            .map_err(|_| tonic::Status::internal("Failed to lock programs".to_string()))?;
-
         Ok(Response::new(types::ListProgramResponse {
-            program: programs
-                .iter()
+            program: self
+                .process_layer
+                .programs
+                .list()
+                .map_err(|e| tonic::Status::internal(e.to_string()))?
+                .into_iter()
                 .map(|(id, program)| types::Program {
                     program_id: id.clone(),
                     name: program.name.clone(),
@@ -155,15 +153,8 @@ impl server_traits::Bind for super::Runtime {
         &self,
         request: Request<types::UnbindRequest>,
     ) -> Result<Response<types::UnbindResponse>, tonic::Status> {
-        let mut writer = self
-            .driver_layer
-            .resolver
-            .mount_points
-            .write()
-            .map_err(|_| tonic::Status::internal("Failed to lock mount points".to_string()))?;
-
         let request = request.into_inner();
-        let output = writer.remove(&request.path);
+        let output = self.driver_layer.resolver.remove(&request.path);
 
         match output {
             None => Err(tonic::Status::not_found("Path not found")),
@@ -185,20 +176,18 @@ impl server_traits::Driver for super::Runtime {
         let output = self
             .driver_layer
             .resolver
-            .mount_points
-            .read()
-            .map_err(|_| tonic::Status::internal("Failed to lock mount points".to_string()))?;
-
-        let output = output.iter().map(|(path, path_info)| {
-            let path = path.clone();
-            let path_info = path_info.clone();
-            types::PathMapping {
-                path,
-                driver_name: path_info.driver_name,
-                driver_version: path_info.driver_version,
-                account_info: path_info.account_info,
-            }
-        });
+            .list()
+            .into_iter()
+            .map(|(path, path_info)| {
+                let path = path.clone();
+                let path_info = path_info.clone();
+                types::PathMapping {
+                    path,
+                    driver_name: path_info.driver_name,
+                    driver_version: path_info.driver_version,
+                    account_info: path_info.account_info,
+                }
+            });
 
         Ok(Response::new(types::ListResolverResponse {
             path_mapping: output.collect(),
@@ -263,10 +252,7 @@ impl server_traits::DriverDetails for super::Runtime {
         let mut all_driver_details = Vec::<DriverDetail>::new();
         let mut message = String::from("Drivers Detail list found!!");
         let reader = &self.driver_layer.drivers;
-        let locked_map = reader
-            .read()
-            .map_err(|_| tonic::Status::internal("Failed to lock map"))?;
-        for (driver_info, _module) in locked_map.iter() {
+        for (driver_info, _module) in reader.list().map_err(|e| tonic::Status::internal(e.to_string()))? {
             let new_driver = DriverDetail {
                 name: driver_info.name.clone(),
                 version: driver_info.version.clone(),

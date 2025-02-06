@@ -142,23 +142,11 @@ impl ProcessState {
         input: String,
     ) -> Result<super::resolver::PathInfo, component::module::component::units::driver::DriverError>
     {
-        let path_info = self
-            .driver_runtime
-            .resolver
-            .mount_points
-            .read()
-            .map_err(|_| {
-                component::module::component::units::driver::DriverError::SystemError(
-                    "Failed while finding path".to_string(),
-                )
-            })?
-            .get(input.as_str())
-            .cloned()
-            .ok_or(
-                component::module::component::units::driver::DriverError::InvalidInput(
-                    "Failed while resolving path".to_string(),
-                ),
-            )?;
+        let path_info = self.driver_runtime.resolver.get(input.as_str()).ok_or(
+            component::module::component::units::driver::DriverError::InvalidInput(
+                "Failed while resolving path".to_string(),
+            ),
+        )?;
         Ok(path_info)
     }
 
@@ -169,19 +157,17 @@ impl ProcessState {
         wasmtime::component::Component,
         component::module::component::units::driver::DriverError,
     > {
-        let driver_list = self.driver_runtime.drivers.read().map_err(|_| {
-            component::module::component::units::driver::DriverError::SystemError(
+        let driver = self.driver_runtime.drivers.get(input).map_err(|_| {
+            component::module::component::units::driver::DriverError::InvalidInput(
                 "Failed while finding driver".to_string(),
             )
         })?;
 
-        let driver = driver_list.get(input).ok_or(
+        driver.clone().ok_or(
             component::module::component::units::driver::DriverError::InvalidInput(
                 "Failed while finding driver".to_string(),
             ),
-        )?;
-
-        Ok(driver.clone())
+        )
     }
 
     pub fn get_lower_runtime(
@@ -214,9 +200,7 @@ impl ProcessState {
             })?;
 
         wasmtime_wasi::add_to_linker_sync(&mut linker).map_err(|e| {
-            component::module::component::units::driver::DriverError::SystemError(
-                e.to_string()
-            )
+            component::module::component::units::driver::DriverError::SystemError(e.to_string())
         })?;
 
         // wasmtime_wasi_http::add_to_linker_sync(&mut linker).map_err(|e| {
@@ -259,13 +243,12 @@ impl ProcessState {
         if self
             .driver_runtime
             .drivers
-            .read()
+            .get(&driver_info)
             .map_err(|_| {
-                component::module::component::units::driver::DriverError::SystemError(
+                component::module::component::units::driver::DriverError::InvalidInput(
                     "Failed while finding driver".to_string(),
                 )
             })?
-            .get(&driver_info)
             .is_none()
         {
             return Err(
@@ -275,31 +258,17 @@ impl ProcessState {
             );
         }
 
-        // existing bind :: check
-        let reader = self
-            .driver_runtime
-            .resolver
-            .mount_points
-            .read()
-            .map_err(|_| {
-                component::module::component::units::driver::DriverError::SystemError(
-                    "Failed while finding path".to_string(),
-                )
-            })?;
-        let output = reader.get(path.as_str()).cloned();
-
-        drop(reader);
+        let output = self.driver_runtime.resolver.get(path.as_str());
 
         match output {
             None => {
                 let driver = self.get_driver(&driver_info)?;
                 let (linker, mut state) = self.get_lower_runtime(driver_info.clone())?;
-
                 let instance =
                     component::driver::DriverWorld::instantiate(&mut state, &driver, &linker)
                         .map_err(|e| {
                             component::module::component::units::driver::DriverError::SystemError(
-                                e.to_string()
+                                e.to_string(),
                             )
                         })?;
 
@@ -323,17 +292,7 @@ impl ProcessState {
                     account_info: output,
                 };
 
-                let mut writer =
-                    self.driver_runtime
-                        .resolver
-                        .mount_points
-                        .write()
-                        .map_err(|_| {
-                            component::module::component::units::driver::DriverError::SystemError(
-                                "Failed to lock mount points".to_string(),
-                            )
-                        })?;
-                writer.insert(path.clone(), path_info);
+                self.driver_runtime.resolver.insert(path.clone(), path_info);
             }
             Some(existing) => {
                 if existing.driver_name != driver_info.name
@@ -353,7 +312,7 @@ impl ProcessState {
                     component::driver::DriverWorld::instantiate(&mut state, &driver, &linker)
                         .map_err(|e| {
                             component::module::component::units::driver::DriverError::SystemError(
-                                e.to_string()
+                                e.to_string(),
                             )
                         })?;
 
@@ -377,17 +336,7 @@ impl ProcessState {
                     account_info: output,
                 };
 
-                let mut writer =
-                    self.driver_runtime
-                        .resolver
-                        .mount_points
-                        .write()
-                        .map_err(|_| {
-                            component::module::component::units::driver::DriverError::SystemError(
-                                "Failed to lock mount points".to_string(),
-                            )
-                        })?;
-                writer.insert(path.clone(), path_info);
+                self.driver_runtime.resolver.insert(path.clone(), path_info);
             }
         }
         Ok(())

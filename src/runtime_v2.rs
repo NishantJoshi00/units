@@ -14,6 +14,7 @@ pub mod resolver;
 pub mod service;
 pub mod types;
 pub mod integration;
+pub mod storage;
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct RuntimeConfig {
