@@ -14,7 +14,7 @@ impl Persistance for () {}
 #[derive(Clone)]
 pub struct Platform {
     pub storage: Storage,
-    pub persistance: Box<dyn Persistance>
+    // pub persistance: Box<dyn Persistance>
 }
 
 #[derive(Clone, Debug)]
@@ -33,7 +33,7 @@ impl Platform {
                 redis: Arc::new(Mutex::new(redis::Client::open("redis://127.0.0.1/")?)),
                 kev: Arc::new(RwLock::new(HashMap::new())),
             },
-            persistance: Box::new(()),
+            // persistance: Box::new(()),
         })
     }
 }

@@ -2,7 +2,7 @@ use crate::runtime_v2::types::component::driver::component::units::storage::{Hos
 use crate::runtime_v2::types::DriverState;
 
 impl Host for DriverState {
-    fn get(&mut self, key: String) -> Result<String, StorageError> {
+    async fn get(&mut self, key: String) -> Result<String, StorageError> {
         tracing::info!(runtime = "driver", call = "get", key = key.as_str());
         let output =
             self.platform.storage.get(&key).map_err(|e| {
@@ -14,7 +14,7 @@ impl Host for DriverState {
         }
     }
 
-    fn set(&mut self, key: String, value: String) -> Result<(), StorageError> {
+    async fn set(&mut self, key: String, value: String) -> Result<(), StorageError> {
         tracing::info!(runtime = "driver", call = "set", key = key.as_str());
         self.platform
             .storage
@@ -23,66 +23,83 @@ impl Host for DriverState {
     }
 }
 
-
 mod http_impl {
+    use once_cell::sync::Lazy;
+    static HTTP_CLIENT: Lazy<reqwest::Client> = Lazy::new(reqwest::Client::new);
 
-
+    use crate::runtime_v2::types::component::driver::component::units::*;
     use crate::runtime_v2::types::DriverState;
-    use crate::runtime_v2::types::{component::driver::component::units::*};
 
     impl http::Host for DriverState {
-        fn send_request(&mut self, request: http::Request) -> http::Response {
-            let output = match request.method {
+
+        async fn send_request(&mut self, request: http::Request) -> http::Response {
+            // Clone the client first to avoid any potential thread contention
+            let client = HTTP_CLIENT.clone();
+
+            let response = match request.method {
                 http::Method::Get => {
-                    let mut urequest = ureq::get(&request.url);
+                    let mut req_builder = client.get(&request.url);
                     for (key, value) in request.headers.iter() {
-                        urequest = urequest.header(key, value);
+                        req_builder = req_builder.header(key, value);
                     }
-                    urequest.call()
+                    req_builder.send().await
                 }
                 http::Method::Post => {
-
-                    let mut urequest = ureq::post(&request.url);
+                    let mut req_builder = client.post(&request.url);
                     for (key, value) in request.headers.iter() {
-                        urequest = urequest.header(key, value);
+                        req_builder = req_builder.header(key, value);
                     }
-                    let body = request.body.expect("failed to get body");
-                    urequest.send(&body)
+                    if let Some(body) = request.body {
+                        req_builder = req_builder.body(body);
+                    }
+                    req_builder.send().await
                 }
                 http::Method::Put => {
-                    let mut urequest = ureq::put(&request.url);
+                    let mut req_builder = client.put(&request.url);
                     for (key, value) in request.headers.iter() {
-                        urequest = urequest.header(key, value);
+                        req_builder = req_builder.header(key, value);
                     }
-                    let body = request.body.expect("failed to get body");
-                    urequest.send(&body)
+                    if let Some(body) = request.body {
+                        req_builder = req_builder.body(body);
+                    }
+                    req_builder.send().await
                 }
                 http::Method::Delete => {
-                    let mut urequest = ureq::put(&request.url);
+                    let mut req_builder = client.delete(&request.url);
                     for (key, value) in request.headers.iter() {
-                        urequest = urequest.header(key, value);
+                        req_builder = req_builder.header(key, value);
                     }
-                    let body = request.body.expect("failed to get body");
-                    urequest.send(&body)
+                    if let Some(body) = request.body {
+                        req_builder = req_builder.body(body);
+                    }
+                    req_builder.send().await
                 }
             };
 
-            let response = output.expect("failed to send request");
+            let response = response.expect("failed to send request");
 
-            let response = http::Response {
-                status: response.status().as_u16(),
-                headers: response.headers().iter().map(|(name, value)| {
+            let headers = response
+                .headers()
+                .iter()
+                .map(|(name, value)| {
                     (
                         name.as_str().to_string(),
-                        value.to_str().expect("failed to convert header value").to_string(),
-                        )
-                }).collect(),
-                body: response.into_body().read_to_string().expect("failed to read body"),
-            };
+                        value
+                            .to_str()
+                            .expect("failed to convert header value")
+                            .to_string(),
+                    )
+                })
+                .collect();
 
-            response
+            let status = response.status().as_u16();
+            let body = response.text().await.expect("failed to read body");
 
-
+            http::Response {
+                status,
+                headers,
+                body,
+            }
         }
     }
 }

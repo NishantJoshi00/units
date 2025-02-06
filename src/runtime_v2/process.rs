@@ -1,15 +1,11 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock},
-};
 
-use super::types;
+use super::{storage::ProgramStorage, types};
 
 #[derive(Clone)]
 pub struct ProcessRuntime {
     pub engine: wasmtime::Engine,
     pub config: types::ProcessConfig,
-    pub programs: Arc<RwLock<HashMap<String, Program>>>,
+    pub programs: Box<dyn ProgramStorage>,
 }
 
 #[derive(Clone)]
@@ -26,11 +22,11 @@ impl ProcessRuntime {
         Ok(Self {
             engine,
             config,
-            programs: Arc::new(RwLock::new(HashMap::new())),
+            programs: Box::new(super::storage::PersistentStorage::new()),
         })
     }
 
-    pub fn store_program(
+    pub async fn store_program(
         &self,
         name: String,
         version: String,
@@ -42,20 +38,12 @@ impl ProcessRuntime {
             component,
         };
         let id = crate::utils::id::new();
-        self.programs
-            .write()
-            .map_err(|e| anyhow::anyhow!("Poisoned Lock {:?}", e))?
-            .insert(id.clone(), program);
+        self.programs.insert(&id, program).await?;
 
         Ok(id)
     }
 
-    pub fn find_program(&self, id: &str) -> anyhow::Result<Option<Program>> {
-        Ok(self
-            .programs
-            .read()
-            .map_err(|e| anyhow::anyhow!("Poisoned Lock {:?}", e))?
-            .get(id)
-            .cloned())
+    pub async fn find_program(&self, id: &str, engine: wasmtime::Engine) -> anyhow::Result<Option<Program>> {
+        self.programs.get(id, engine).await
     }
 }

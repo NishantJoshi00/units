@@ -8,12 +8,13 @@ use self::types::ServerConfig;
 
 pub mod driver;
 pub mod glue;
+pub mod integration;
 pub mod platform;
 pub mod process;
 pub mod resolver;
 pub mod service;
+pub mod storage;
 pub mod types;
-pub mod integration;
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct RuntimeConfig {
@@ -45,7 +46,7 @@ impl Runtime {
         })
     }
 
-    pub fn exec(
+    pub async fn exec(
         self,
         ctx: types::UserCtx,
         module: wasmtime::component::Component,
@@ -63,21 +64,20 @@ impl Runtime {
 
         let mut linker = wasmtime::component::Linker::new(&self.process_layer.engine);
 
-        
-
         types::component::module::ModuleWorld::add_to_linker(
             &mut linker,
             |state: &mut types::ProcessState| state,
         )?;
 
-        wasmtime_wasi::add_to_linker_sync(&mut linker)?;
+        // wasmtime_wasi::add_to_linker_async(&mut linker)?;
 
         let instance =
-            types::component::module::ModuleWorld::instantiate(&mut state, &module, &linker)?;
+            types::component::module::ModuleWorld::instantiate_async(&mut state, &module, &linker)
+                .await?;
 
         tracing::info!(runtime = "process", input = %input, "executing module");
 
-        let result = instance.call_main(state, &input)?;
+        let result = instance.call_main(state, &input).await?;
 
         match result {
             Ok(output) => Ok(output),

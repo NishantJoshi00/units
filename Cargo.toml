@@ -10,12 +10,14 @@ redis = []
 [dependencies]
 
 # Runtime
-wasmtime = { version = "29.0.1", features = ["runtime"] }
+wasmtime = { version = "29.0.1", features = ["runtime", "async"] }
 wasmtime-wasi = "29.0.1"
 wasmtime-wasi-http = "29.0.1"
-wat = "1.221.0"
-tokio = { version = "1.42.0", features = ["full"] }
+wat = "1.220.1"
+tokio = { version = "1.43.0", features = ["full"] }
 smol = "2.0.2"
+once_cell = "1.20.2"
+async-trait = "0.1.86"
 
 # Encoding & Decoding
 serde = { version = "1.0.215", features = ["derive"] }
@@ -35,6 +37,7 @@ tonic-reflection = "0.12.2"
 tonic-types = "0.12.2"
 tonic-web = "0.12.3"
 tower-http = { version = "0.6.2", features = ["cors"] }
+reqwest = "0.12.12"
 
 prost = "0.13"
 surf = "2.3"
@@ -42,6 +45,7 @@ surf = "2.3"
 nanoid = "0.4.0"
 
 redis = { version = "*" }
+sqlx = { version = "0.8.3", features = [ "sqlite", "runtime-tokio", "tls-native-tls" ] }
 
 ureq = "3.0.2"
 jsonwebtoken = "9.3.0"

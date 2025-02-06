@@ -1,10 +1,8 @@
-# Finternet Runtime
+# UNITS Runtime
 
 <div align="center">
 
-<a href="https://finternetlab.io/">
-  <img src="https://finternetlab.io/images/headers/finternet_logo_for_website-transformed1.png" alt="Finternet" height="46">
-</a>
+<img src="https://finternetlab.io/images/headers/finternet_logo_for_website-transformed1.png" alt="Finternet" height="46">
 
 [![Rust](https://img.shields.io/badge/rust-1.75+-93450a.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -12,7 +10,6 @@
 
 A modular and extensible WebAssembly runtime system for financial transactions and asset management
 
-[Website](https://finternetlab.io/) •
 [Architecture](#architecture) •
 [Quick Start](#quick-start) •
 [Documentation](#documentation) •
@@ -22,24 +19,7 @@ A modular and extensible WebAssembly runtime system for financial transactions a
 
 ## Overview
 
-Finternet Runtime is a three-tier architecture system that provides:
-
-1. **Process Layer**: Direct user interaction layer for executing workflows (WebAssembly modules)
-2. **Driver Layer**: Intermediary layer providing abstraction over platform-specific operations
-3. **Platform Layer**: Low-level system access and services integration
-
-Key Features:
-- 📦 WebAssembly Component Model support
-- 🔌 Dynamic driver loading/unloading
-- 💾 Pluggable storage backends (Redis, in-memory)
-- ⛓️ Solana blockchain integration
-- 🌐 gRPC/gRPC-Web API interface
-- 🔍 Built-in health checks and metrics
-- ⚡ WASI support
-
-## Overview
-
-Finternet Runtime is a three-tier runtime system that provides:
+UNITS is a three-tier runtime system that provides:
 
 - **Process Layer**: Direct user interaction for executing workflows
 - **Driver Layer**: Asset abstraction and platform operations
@@ -57,10 +37,10 @@ Key Features:
 
 ```bash
 # Clone the repository
-git clone https://github.com/NishantJoshi00/units.git
+git clone https://github.com/yourusername/finternet-runtime.git
 
 # Enter the directory
-cd units
+cd finternet-runtime
 
 # Build the project
 cargo build --release
@@ -74,21 +54,21 @@ cargo run --release -- config/development.toml
 Our documentation is organized into three main sections:
 
 ### [📐 Architecture](docs/ARCHITECTURE.md)
-Detailed explanation of Finternet Runtime's design and components:
+Detailed explanation of UNITS's design and components:
 - Three-tier architecture
 - System flow and interactions
 - Security model
 - Extension points
 
 ### [🚀 Try Locally](docs/TRY_LOCALLY.md)
-Get started with running Finternet Runtime:
+Get started with running UNITS:
 - Prerequisites and setup
 - Configuration options
 - Quick test guide
 - Development tips
 
 ### [📚 Development Guidelines](docs/DEVELOPMENT.md)
-Learn how to develop for Finternet Runtime:
+Learn how to develop for UNITS:
 - Driver development
 - Module development
 - Best practices
@@ -108,8 +88,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- 📝 [Open an issue](https://github.com/NishantJoshi00/units/issues)
-- 💬 [Start a discussion](https://github.com/NishantJoshi00/units/discussions)
+- 📝 [Open an issue](https://github.com/yourusername/finternet-runtime/issues)
+- 💬 [Start a discussion](https://github.com/yourusername/finternet-runtime/discussions)
 - 🔍 [Browse documentation](docs/)
 
 ---

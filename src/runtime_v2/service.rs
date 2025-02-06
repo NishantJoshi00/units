@@ -87,6 +87,7 @@ impl server_traits::Execution for super::Runtime {
         let user_id= get_user_id(&request).map_err(|e| tonic::Status::internal(e.to_string()))?;
         let request = request.into_inner();
         let output = execte(self.clone(), request,user_id)
+            .await
             .inspect_err(|err| {
                 tracing::error!(error = ?err, "Execution failed");
             })
@@ -104,6 +105,7 @@ impl server_traits::Execution for super::Runtime {
         let id = self
             .process_layer
             .store_program(request.name, request.version, component)
+            .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         Ok(Response::new(types::SubmitProgramResponse {
@@ -115,15 +117,14 @@ impl server_traits::Execution for super::Runtime {
         &self,
         _request: Request<types::ListProgramRequest>,
     ) -> Result<Response<types::ListProgramResponse>, tonic::Status> {
-        let programs = self
-            .process_layer
-            .programs
-            .read()
-            .map_err(|_| tonic::Status::internal("Failed to lock programs".to_string()))?;
-
         Ok(Response::new(types::ListProgramResponse {
-            program: programs
-                .iter()
+            program: self
+                .process_layer
+                .programs
+                .list(self.process_layer.engine.clone())
+                .await
+                .map_err(|e| tonic::Status::internal(e.to_string()))?
+                .into_iter()
                 .map(|(id, program)| types::Program {
                     program_id: id.clone(),
                     name: program.name.clone(),
@@ -134,7 +135,7 @@ impl server_traits::Execution for super::Runtime {
     }
 }
 
-fn execte(
+async fn execte(
     runtime: Runtime,
     request: types::ExecutionRequest,
     user_id: String,
@@ -142,7 +143,8 @@ fn execte(
     let component = match (request.program_id, request.binary) {
         (Some(program_id), None) => runtime
             .process_layer
-            .find_program(&program_id)?
+            .find_program(&program_id, runtime.process_layer.engine.clone())
+            .await?
             .map(|prog| prog.component)
             .ok_or_else(|| anyhow::anyhow!("Program not found"))?,
         (None, Some(binary)) => {
@@ -152,13 +154,15 @@ fn execte(
             anyhow::bail!("Either program_id or binary should be provided (but not both)")
         }
     };
+
     let output = runtime.exec(
         super::types::UserCtx {
             user_id: user_id.to_string(),
         },
         component,
         request.input,
-    )?;
+    )
+    .await?;
 
     Ok(types::ExecutionResponse { output })
 }
@@ -197,6 +201,7 @@ impl server_traits::Bind for super::Runtime {
                 },
                 request.account_info.clone(),
             )
+            .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         let output = types::BindResponse {
@@ -213,7 +218,6 @@ impl server_traits::Bind for super::Runtime {
         &self,
         request: Request<types::UnbindRequest>,
     ) -> Result<Response<types::UnbindResponse>, tonic::Status> {
-
         let user_id= get_user_id(&request).map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         let mut writer = self
@@ -224,7 +228,6 @@ impl server_traits::Bind for super::Runtime {
             .map_err(|_| tonic::Status::internal("Failed to lock mount points".to_string()))?;
 
         let request = request.into_inner();
-
         let path = if let Some(suffix) = request.path.strip_prefix("~/") {
             format!("/accounts/{}/{}", user_id, suffix)
         } else {
@@ -250,23 +253,22 @@ impl server_traits::Driver for super::Runtime {
         &self,
         _request: Request<types::ListResolverRequest>,
     ) -> Result<Response<types::ListResolverResponse>, tonic::Status> {
-        let output = self
-            .driver_layer
-            .resolver
-            .mount_points
-            .read()
-            .map_err(|_| tonic::Status::internal("Failed to lock mount points".to_string()))?;
-
-        let output = output.iter().map(|(path, path_info)| {
-            let path = path.clone();
-            let path_info = path_info.clone();
-            types::PathMapping {
-                path,
-                driver_name: path_info.driver_name,
-                driver_version: path_info.driver_version,
-                account_info: path_info.account_info,
-            }
-        });
+        let output =
+            self.driver_layer
+                .resolver
+                .list()
+                .await
+                .into_iter()
+                .map(|(path, path_info)| {
+                    let path = path.clone();
+                    let path_info = path_info.clone();
+                    types::PathMapping {
+                        path,
+                        driver_name: path_info.driver_name,
+                        driver_version: path_info.driver_version,
+                        account_info: path_info.account_info,
+                    }
+                });
 
         Ok(Response::new(types::ListResolverResponse {
             path_mapping: output.collect(),
@@ -292,6 +294,7 @@ impl server_traits::Driver for super::Runtime {
                 module,
                 request.driver_version.clone(),
             )
+            .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         Ok(tonic::Response::new(types::LoadDriverResponse {
@@ -313,6 +316,7 @@ impl server_traits::Driver for super::Runtime {
 
         self.driver_layer
             .remove_driver(driver_info)
+            .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         Ok(tonic::Response::new(types::UnloadDriverResponse {
@@ -331,10 +335,11 @@ impl server_traits::DriverDetails for super::Runtime {
         let mut all_driver_details = Vec::<DriverDetail>::new();
         let mut message = String::from("Drivers Detail list found!!");
         let reader = &self.driver_layer.drivers;
-        let locked_map = reader
-            .read()
-            .map_err(|_| tonic::Status::internal("Failed to lock map"))?;
-        for (driver_info, _module) in locked_map.iter() {
+        for (driver_info, _module) in reader
+            .list(self.driver_layer.engine.clone())
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?
+        {
             let new_driver = DriverDetail {
                 name: driver_info.name.clone(),
                 version: driver_info.version.clone(),

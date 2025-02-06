@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
-
-use super::{resolver, types};
+use super::storage::{DriverStorage, Resolver};
+use super::types;
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub struct DriverInfo {
@@ -12,43 +10,36 @@ pub struct DriverInfo {
 #[derive(Clone)]
 pub struct DriverRuntime {
     pub engine: wasmtime::Engine,
-    pub drivers: Arc<RwLock<HashMap<DriverInfo, wasmtime::component::Component>>>,
-    pub resolver: resolver::Resolver,
+    pub drivers: Box<dyn DriverStorage>,
+    pub resolver: Box<dyn Resolver>,
 }
 
 impl DriverRuntime {
     pub fn init(_config: types::DriverConfig) -> anyhow::Result<Self> {
         tracing::debug!("Initializing driver runtime");
         let engine = wasmtime::Engine::default();
-        let drivers = Arc::new(RwLock::new(HashMap::new()));
-        let resolver = resolver::Resolver::init();
+        let resolver = super::storage::PersistentStorage::new();
         Ok(Self {
             engine,
-            drivers,
-            resolver,
+            drivers: Box::new(resolver.clone()),
+            resolver: Box::new(resolver),
         })
     }
 
-    pub fn add_driver(
+    pub async fn add_driver(
         &self,
         name: String,
         module: wasmtime::component::Component,
         version: String,
     ) -> anyhow::Result<()> {
         let driver_info = DriverInfo { name, version };
-        self.drivers
-            .write()
-            .map_err(|e| anyhow::anyhow!("Poisoned Lock {:?}", e))?
-            .insert(driver_info, module);
+        self.drivers.insert(driver_info, module).await?;
 
         Ok(())
     }
 
-    pub fn remove_driver(&self, driver_info: DriverInfo) -> anyhow::Result<()> {
-        self.drivers
-            .write()
-            .map_err(|e| anyhow::anyhow!("Poisoned Lock {:?}", e))?
-            .remove(&driver_info);
+    pub async fn remove_driver(&self, driver_info: DriverInfo) -> anyhow::Result<()> {
+        self.drivers.remove(&driver_info).await?;
 
         Ok(())
     }
