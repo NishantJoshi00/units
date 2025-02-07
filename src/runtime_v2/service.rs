@@ -84,9 +84,9 @@ impl server_traits::Execution for super::Runtime {
         &self,
         request: Request<types::ExecutionRequest>,
     ) -> Result<Response<types::ExecutionResponse>, tonic::Status> {
-        let user_id= get_user_id(&request).map_err(|e| tonic::Status::internal(e.to_string()))?;
+        // let user_id= get_user_id(&request).map_err(|e| tonic::Status::internal(e.to_string()))?;
         let request = request.into_inner();
-        let output = execte(self.clone(), request,user_id)
+        let output = execte(self.clone(), request)
             .await
             .inspect_err(|err| {
                 tracing::error!(error = ?err, "Execution failed");
@@ -138,7 +138,7 @@ impl server_traits::Execution for super::Runtime {
 async fn execte(
     runtime: Runtime,
     request: types::ExecutionRequest,
-    user_id: String,
+    // user_id: String,
 ) -> anyhow::Result<types::ExecutionResponse> {
     let component = match (request.program_id, request.binary) {
         (Some(program_id), None) => runtime
@@ -157,7 +157,7 @@ async fn execte(
 
     let output = runtime.exec(
         super::types::UserCtx {
-            user_id: user_id.to_string(),
+            user_id: "root".to_string(),
         },
         component,
         request.input,
@@ -173,12 +173,12 @@ impl server_traits::Bind for super::Runtime {
         &self,
         request: Request<types::BindRequest>,
     ) -> Result<Response<types::BindResponse>, tonic::Status> {
-        let user_id= get_user_id(&request).map_err(|e| tonic::Status::internal(e.to_string()))?;
+        // let user_id= get_user_id(&request).map_err(|e| tonic::Status::internal(e.to_string()))?;
         let request = request.into_inner();
 
         let mut process_state = ProcessState::new(
             UserCtx {
-                user_id: user_id.to_string(),
+                user_id:"root".to_string(),
             },
             self.driver_layer.clone(),
             self.platform_layer.clone(),
@@ -186,7 +186,7 @@ impl server_traits::Bind for super::Runtime {
         );
 
         let path = if let Some(suffix) = request.path.strip_prefix("~/") {
-            format!("/accounts/{}/{}", user_id, suffix)
+            format!("/accounts/root/{}", suffix)
         } else {
             request.path.clone()
         };
@@ -218,23 +218,8 @@ impl server_traits::Bind for super::Runtime {
         &self,
         request: Request<types::UnbindRequest>,
     ) -> Result<Response<types::UnbindResponse>, tonic::Status> {
-        let user_id= get_user_id(&request).map_err(|e| tonic::Status::internal(e.to_string()))?;
-
-        let mut writer = self
-            .driver_layer
-            .resolver
-            .mount_points
-            .write()
-            .map_err(|_| tonic::Status::internal("Failed to lock mount points".to_string()))?;
-
         let request = request.into_inner();
-        let path = if let Some(suffix) = request.path.strip_prefix("~/") {
-            format!("/accounts/{}/{}", user_id, suffix)
-        } else {
-            request.path.clone()
-        };
-
-        let output = writer.remove(&path);
+        let output = self.driver_layer.resolver.remove(&request.path).await;
 
         match output {
             None => Err(tonic::Status::not_found("Path not found")),
@@ -358,90 +343,90 @@ impl server_traits::DriverDetails for super::Runtime {
     }
 }
 
-#[tonic::async_trait]
-impl server_traits::UserSignUp for super::Runtime {
-    async fn sign_up(
-        &self,
-        request: Request<types::SignUpRequest>,
-    ) -> Result<Response<types::SignUpResponse>, tonic::Status> {
-        let request = request.into_inner();
-        let mut hasher = blake3::Hasher::new();
-        hasher.update(request.password.as_bytes()); 
-        let hash_pass = hasher.finalize(); 
-        let user=User{
-            user_id:String::from("root"),
-            username:request.username.clone()
-        };
-        let _=self.platform_layer.persistance.create_user(user, &hash_pass);
-        let message=format!("{} has signed up successfully",request.username);
-        Ok(tonic::Response::new(types::SignUpResponse {
-            message,
-        }))
-    }
-}
+// #[tonic::async_trait]
+// impl server_traits::UserSignUp for super::Runtime {
+//     async fn sign_up(
+//         &self,
+//         request: Request<types::SignUpRequest>,
+//     ) -> Result<Response<types::SignUpResponse>, tonic::Status> {
+//         let request = request.into_inner();
+//         let mut hasher = blake3::Hasher::new();
+//         hasher.update(request.password.as_bytes()); 
+//         let hash_pass = hasher.finalize(); 
+//         let user=User{
+//             user_id:String::from("root"),
+//             username:request.username.clone()
+//         };
+//         let _=self.platform_layer.storage.create_user(user, &hash_pass);
+//         let message=format!("{} has signed up successfully",request.username);
+//         Ok(tonic::Response::new(types::SignUpResponse {
+//             message,
+//         }))
+//     }
+// }
 
-#[tonic::async_trait]
-impl server_traits::UserLogin for super::Runtime {
-    async fn login(
-        &self,
-        request: Request<types::LoginRequest>,
-    ) -> Result<Response<types::LoginResponse>, tonic::Status> {
-        let request = request.into_inner();
-        let mut hasher = blake3::Hasher::new();
-        hasher.update(request.password.as_bytes());
-        let hash_pass = hasher.finalize();
+// #[tonic::async_trait]
+// impl server_traits::UserLogin for super::Runtime {
+//     async fn login(
+//         &self,
+//         request: Request<types::LoginRequest>,
+//     ) -> Result<Response<types::LoginResponse>, tonic::Status> {
+//         let request = request.into_inner();
+//         let mut hasher = blake3::Hasher::new();
+//         hasher.update(request.password.as_bytes());
+//         let hash_pass = hasher.finalize();
 
-        let user=self.platform_layer.persistance.get_user(&request.username, &hash_pass);
+//         let user=self.platform_layer.storage.get(&request.username, &hash_pass);
         
-        let (message, set_cookie) = match user {
-            Ok(Some(user)) => {
-                    let expiration = SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs() as usize + 60; 
+//         let (message, set_cookie) = match user {
+//             Ok(Some(user)) => {
+//                     let expiration = SystemTime::now()
+//                         .duration_since(UNIX_EPOCH)
+//                         .unwrap()
+//                         .as_secs() as usize + 60; 
         
-                    let claims = Claims {
-                        username: request.username.clone(),
-                        user_id: user.user_id,
-                        exp: expiration,
-                        iat: SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .unwrap()
-                            .as_secs() as usize,
-                    };
+//                     let claims = Claims {
+//                         username: request.username.clone(),
+//                         user_id: user.user_id,
+//                         exp: expiration,
+//                         iat: SystemTime::now()
+//                             .duration_since(UNIX_EPOCH)
+//                             .unwrap()
+//                             .as_secs() as usize,
+//                     };
         
-                    let secret = b"finternet";
+//                     let secret = b"finternet";
                     
-                    let token = encode(
-                        &Header::default(),
-                        &claims,
-                        &EncodingKey::from_secret(secret)
-                    ).map_err(|_| Status::internal("Failed to create token"))?;
+//                     let token = encode(
+//                         &Header::default(),
+//                         &claims,
+//                         &EncodingKey::from_secret(secret)
+//                     ).map_err(|_| Status::internal("Failed to create token"))?;
         
-                    let cookie = format!(
-                        "{}",
-                        token
-                    );
+//                     let cookie = format!(
+//                         "{}",
+//                         token
+//                     );
                     
-                    (
-                        format!("{} has logged in successfully", request.username),
-                        Some(cookie)
-                    )
-                } 
-            Ok(None) => (String::from("User not found"), None),
-            Err(_) => (String::from("Error retrieving user"), None),
-        };
+//                     (
+//                         format!("{} has logged in successfully", request.username),
+//                         Some(cookie)
+//                     )
+//                 } 
+//             Ok(None) => (String::from("User not found"), None),
+//             Err(_) => (String::from("Error retrieving user"), None),
+//         };
 
-        let mut response = Response::new(types::LoginResponse { message });
+//         let mut response = Response::new(types::LoginResponse { message });
         
-        if let Some(cookie_value) = set_cookie {
-            response.metadata_mut().insert(
-                "set-cookie",
-                MetadataValue::try_from(&cookie_value)
-                    .map_err(|_| Status::internal("Failed to create cookie metadata"))?
-            );
-        }
+//         if let Some(cookie_value) = set_cookie {
+//             response.metadata_mut().insert(
+//                 "set-cookie",
+//                 MetadataValue::try_from(&cookie_value)
+//                     .map_err(|_| Status::internal("Failed to create cookie metadata"))?
+//             );
+//         }
 
-        Ok(response)
-    }
-}
+//         Ok(response)
+//     }
+// }

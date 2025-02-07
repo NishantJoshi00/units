@@ -18,7 +18,7 @@ pub struct Program {
 impl ProcessRuntime {
     pub fn init(config: types::ProcessConfig) -> anyhow::Result<Self> {
         tracing::debug!("Initializing process runtime");
-        let engine = wasmtime::Engine::default();
+        let engine = wasmtime::Engine::new(wasmtime::Config::new().async_support(true))?;
         Ok(Self {
             engine,
             config,

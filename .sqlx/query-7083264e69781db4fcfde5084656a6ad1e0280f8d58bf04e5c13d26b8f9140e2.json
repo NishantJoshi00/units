@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM Resolver WHERE path = ? RETURNING path_info",
+  "describe": {
+    "columns": [
+      {
+        "name": "path_info",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "7083264e69781db4fcfde5084656a6ad1e0280f8d58bf04e5c13d26b8f9140e2"
+}

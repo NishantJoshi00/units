@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT path, path_info FROM Resolver WHERE path = ?",
+  "query": "SELECT path, path_info FROM Resolver",
   "describe": {
     "columns": [
       {
@@ -15,12 +15,12 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 0
     },
     "nullable": [
-      true,
+      false,
       false
     ]
   },
-  "hash": "2d6257491844a756dfe15be58020bd7399b8613b88125d3924c36649ddca614d"
+  "hash": "99be94679fd7f5a75a1567ee4d015298173619b51a928831c63bcf143c0bee64"
 }

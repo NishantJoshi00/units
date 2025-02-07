@@ -98,8 +98,8 @@ impl Server {
             .add_service(bind_service)
             .add_service(driver_service)
             .add_service(driver_details_service)
-            .add_service(user_sign_up_service)
-            .add_service(user_login_sevice)
+            // .add_service(user_sign_up_service)
+            // .add_service(user_login_sevice)
             .serve_with_shutdown(socket_addr, shut_down_signal)
             .await
             .map_err(Into::into)

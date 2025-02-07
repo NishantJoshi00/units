@@ -17,7 +17,7 @@ pub struct DriverRuntime {
 impl DriverRuntime {
     pub fn init(_config: types::DriverConfig) -> anyhow::Result<Self> {
         tracing::debug!("Initializing driver runtime");
-        let engine = wasmtime::Engine::default();
+        let engine = wasmtime::Engine::new(wasmtime::Config::new().async_support(true))?;
         let resolver = super::storage::PersistentStorage::new();
         Ok(Self {
             engine,

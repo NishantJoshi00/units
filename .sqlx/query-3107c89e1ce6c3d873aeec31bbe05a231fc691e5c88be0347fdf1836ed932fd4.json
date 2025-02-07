@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR REPLACE INTO Resolver (path, path_info) VALUES (?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "3107c89e1ce6c3d873aeec31bbe05a231fc691e5c88be0347fdf1836ed932fd4"
+}

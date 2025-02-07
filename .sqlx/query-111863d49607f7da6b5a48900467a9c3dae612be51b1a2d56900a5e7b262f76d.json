@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM Driver WHERE name = ? AND version = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "111863d49607f7da6b5a48900467a9c3dae612be51b1a2d56900a5e7b262f76d"
+}

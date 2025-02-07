@@ -170,6 +170,7 @@ impl DriverStorage for SqliteStorage {
         driver_info: &DriverInfo,
         engine: wasmtime::Engine,
     ) -> Result<Option<Component>> {
+        println!("i will panic here");
         let result = sqlx::query!(
             "SELECT component FROM Driver WHERE name = ? AND version = ?",
             driver_info.name,

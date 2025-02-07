@@ -188,7 +188,7 @@ impl ProcessState {
             wasmtime::Store<DriverState>,
         ),
         component::module::component::units::driver::DriverError,
-    > {
+    > { 
         let state = wasmtime::Store::new(
             &self.driver_runtime.engine,
             DriverState::new(
@@ -198,16 +198,13 @@ impl ProcessState {
                 self.event_sender.clone(),
             ),
         );
-
         let mut linker = wasmtime::component::Linker::new(&self.driver_runtime.engine);
-
         component::driver::DriverWorld::add_to_linker(&mut linker, |state: &mut DriverState| state)
             .map_err(|_| {
                 component::module::component::units::driver::DriverError::SystemError(
                     "Failed while adding driver to linker".to_string(),
                 )
             })?;
-
         // wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|e| {
         //     component::module::component::units::driver::DriverError::SystemError(e.to_string())
         // })?;
@@ -248,6 +245,7 @@ impl ProcessState {
         driver_info: DriverInfo,
         input: String,
     ) -> Result<(), component::module::component::units::driver::DriverError> {
+        
         // valid driver :: check
         if self
             .driver_runtime
@@ -267,9 +265,9 @@ impl ProcessState {
                 ),
             );
         }
-
+        
         let output = self.driver_runtime.resolver.get(path.as_str()).await;
-
+        
         match output {
             None => {
                 let driver = self.get_driver(&driver_info, self.driver_runtime.engine.clone()).await?;
@@ -282,7 +280,6 @@ impl ProcessState {
                                 e.to_string(),
                             )
                         })?;
-
                 let output = instance
                     .component_units_driver()
                     .call_bind(state, &input, None)
@@ -297,7 +294,6 @@ impl ProcessState {
                             "Failed while calling bind".to_string(),
                         )
                     })?;
-
                 let path_info = PathInfo {
                     driver_name: driver_info.name,
                     driver_version: driver_info.version,
