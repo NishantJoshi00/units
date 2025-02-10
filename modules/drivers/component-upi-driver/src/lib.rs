@@ -135,7 +135,7 @@ struct Config {
 impl Config {
     fn new() -> Self {
         Config {
-            host: format!("http://{}:8030",env::var("UPI_HOST").unwrap()),
+            host: format!("http://34.93.161.62:8030"),
             uri: "n8".to_string(),
             merchant_id: "INTERNALTESTUAT".to_string(),
             channel_id: "INTERNALTESTUATAPP".to_string(),

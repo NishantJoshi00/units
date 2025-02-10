@@ -271,7 +271,10 @@ impl ProcessState {
         match output {
             None => {
                 let driver = self.get_driver(&driver_info, self.driver_runtime.engine.clone()).await?;
-                let (linker, mut state) = self.get_lower_runtime(driver_info.clone())?;
+                let (mut linker, mut state) = self.get_lower_runtime(driver_info.clone())?;
+                wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|err| {
+                    component::module::component::units::driver::DriverError::SystemError(err.to_string())
+                })?;
                 let instance =
                     component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker)
                         .await
@@ -314,8 +317,11 @@ impl ProcessState {
                 }
 
                 let driver = self.get_driver(&driver_info, self.driver_runtime.engine.clone()).await?;
-                let (linker, mut state) = self.get_lower_runtime(driver_info.clone())?;
+                let (mut linker, mut state) = self.get_lower_runtime(driver_info.clone())?;
 
+                wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|err| {
+                    component::module::component::units::driver::DriverError::SystemError(err.to_string())
+                })?;
                 let instance =
                     component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker)
                         .await
@@ -371,25 +377,32 @@ impl DriverState {
     }
 }
 
-// impl wasmtime_wasi::WasiView for DriverState {
-//     fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
-//         &mut self.table
-//     }
 
-//     fn ctx(&mut self) -> &mut wasmtime_wasi::WasiCtx {
-//         &mut self.wasi_ctx
-//     }
-// }
+impl wasmtime_wasi::WasiView for DriverState {
+    fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
+        let resource = Box::new(wasmtime_wasi::ResourceTable::new());
 
-// impl wasmtime_wasi::WasiView for ProcessState {
-//     fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
-//         &mut self.table
-//     }
+        Box::leak(resource)
+    }
 
-//     fn ctx(&mut self) -> &mut wasmtime_wasi::WasiCtx {
-//         &mut self.wasi_ctx
-//     }
-// }
+    fn ctx(&mut self) -> &mut wasmtime_wasi::WasiCtx {
+        let ctx = Box::new(wasmtime_wasi::WasiCtx::builder().build());
+        Box::leak(ctx)
+    }
+}
+
+impl wasmtime_wasi::WasiView for ProcessState {
+    fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
+        let resource = Box::new(wasmtime_wasi::ResourceTable::new());
+
+        Box::leak(resource)
+    }
+
+    fn ctx(&mut self) -> &mut wasmtime_wasi::WasiCtx {
+        let ctx = Box::new(wasmtime_wasi::WasiCtx::builder().build());
+        Box::leak(ctx)
+    }
+}
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct ServerConfig {

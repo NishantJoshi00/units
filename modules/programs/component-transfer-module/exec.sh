@@ -8,5 +8,7 @@ grpcurl -plaintext -d @ localhost:8080 finternet.Execution/Execute <<EOM
 EOM
 
 
+
+
 # { "path1": "/mono/person1", "path2": "/mono/person2", "amount": 10 }
 # '{"merchantCustomerId": "placeholder", "raw_message": "placeholder", "device_id": "placeholder", "num": "919962463212", "mobile_num": "919962463212", "device_finger_print": "placeholder", "upi_request_id": "placeholder", "bank_account_unique_id": "placeholder", "customer_vpa": "placeholder", "balance": "notupdated"}'

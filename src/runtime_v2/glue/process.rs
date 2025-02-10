@@ -27,8 +27,10 @@ impl units::driver::Host for types::ProcessState {
         let account_info = path_info.account_info.clone();
 
         let driver = self.get_driver(&driver_info, self.driver_runtime.engine.clone()).await?;
-        let (linker, mut state) = self.get_lower_runtime(driver_info)?;
-
+        let (mut linker, mut state) = self.get_lower_runtime(driver_info)?;
+        wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|err| {
+            types::component::module::component::units::driver::DriverError::SystemError(err.to_string())
+        })?;
         let instance =
             types::component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker).await
                 .map_err(|_| {
@@ -88,8 +90,10 @@ impl units::driver::Host for types::ProcessState {
         })?;
 
         let driver = self.get_driver(&driver_info, self.driver_runtime.engine.clone()).await?;
-        let (linker, mut state) = self.get_lower_runtime(driver_info)?;
-
+        let (mut linker, mut state) = self.get_lower_runtime(driver_info)?;
+        wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|err| {
+            types::component::module::component::units::driver::DriverError::SystemError(err.to_string())
+        })?;
         let instance =
             types::component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker).await
                 .map_err(|_| {
@@ -143,8 +147,10 @@ impl units::driver::Host for types::ProcessState {
         assert_eq!(d_1.driver_version, d_2.driver_version);
 
         let driver = self.get_driver(&driver_info, self.driver_runtime.engine.clone()).await?;
-        let (linker, mut state) = self.get_lower_runtime(driver_info)?;
-
+        let (mut linker, mut state) = self.get_lower_runtime(driver_info)?;
+        wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|err| {
+            types::component::module::component::units::driver::DriverError::SystemError(err.to_string())
+        })?;
         let instance =
             types::component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker).await
                 .map_err(|_| {
@@ -182,8 +188,10 @@ impl units::driver::Host for types::ProcessState {
 
         let driver = self.get_driver(&driver_info, self.driver_runtime.engine.clone()).await?;
 
-        let (linker, mut state) = self.get_lower_runtime(driver_info)?;
-
+        let (mut linker, mut state) = self.get_lower_runtime(driver_info)?;
+        wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|err| {
+            types::component::module::component::units::driver::DriverError::SystemError(err.to_string())
+        })?;
         let instance =
             types::component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker).await
                 .map_err(|_| {

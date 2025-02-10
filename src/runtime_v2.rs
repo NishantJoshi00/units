@@ -69,8 +69,10 @@ impl Runtime {
             |state: &mut types::ProcessState| state,
         )?;
 
-        // wasmtime_wasi::add_to_linker_async(&mut linker)?;
-
+        wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|err| {
+                    types::component::module::component::units::driver::DriverError::SystemError(err.to_string())
+        })?;
+        println!("error is here");
         let instance =
             types::component::module::ModuleWorld::instantiate_async(&mut state, &module, &linker)
                 .await?;
