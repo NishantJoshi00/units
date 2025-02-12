@@ -52,11 +52,10 @@ fn get_user_id<T>(request:&Request<T>)->Result<String,Box<dyn Error>>{
         None => return Err(Box::new(Status::unauthenticated("No JWT token found"))),
     };
     
-    // let secret = env::var(b"finternet").unwrap_or_else(|_| "default_value".to_string());
-    let secret=b"finternet";
+    let secret = env::var("secret").unwrap_or_else(|_| "default_value".to_string());
     let claims = decode::<Claims>(
         &token,
-        &DecodingKey::from_secret(secret),
+        &DecodingKey::from_secret(secret.as_bytes()),
         &Validation::default(),
     );
 
@@ -65,7 +64,7 @@ fn get_user_id<T>(request:&Request<T>)->Result<String,Box<dyn Error>>{
             let current_time = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
-                .as_secs(); // Get current time in seconds
+                .as_secs(); 
             if claims.claims.exp < current_time as usize {
                 return Err("Invalid or expired token".to_string().into());// Expired token
             } else {
@@ -392,13 +391,12 @@ impl server_traits::UserLogin for super::Runtime {
                             .unwrap()
                             .as_secs() as usize,
                     };
-        
-                    let secret = b"finternet";
+                    let secret = env::var("secret").unwrap_or_else(|_| "default_value".to_string());
                     
                     let token = encode(
                         &Header::default(),
                         &claims,
-                        &EncodingKey::from_secret(secret)
+                        &EncodingKey::from_secret(secret.as_bytes()),
                     ).map_err(|_| Status::internal("Failed to create token"))?;
         
                     let cookie = format!(
