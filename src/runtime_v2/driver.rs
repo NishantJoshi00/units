@@ -15,10 +15,10 @@ pub struct DriverRuntime {
 }
 
 impl DriverRuntime {
-    pub fn init(_config: types::DriverConfig) -> anyhow::Result<Self> {
+    pub async fn init(_config: types::DriverConfig) -> anyhow::Result<Self> {
         tracing::debug!("Initializing driver runtime");
-        let engine = wasmtime::Engine::default();
-        let resolver = super::storage::PersistentStorage::new();
+        let engine = wasmtime::Engine::new(wasmtime::Config::new().async_support(true)).unwrap();
+        let resolver = super::storage::sql::SqliteStorage::new("sqlite:units.db").await?;
         Ok(Self {
             engine,
             drivers: Box::new(resolver.clone()),
