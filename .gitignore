@@ -1,3 +1,4 @@
 /target
 /modules/target-practice
 /.sqlx
+/.envrc

@@ -381,7 +381,7 @@ impl server_traits::UserLogin for super::Runtime {
                     let expiration = SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .unwrap()
-                        .as_secs() as usize + 60; 
+                        .as_secs() as usize + 3600; 
                     let claims = Claims {
                         username: request.username.clone(),
                         user_id: user,

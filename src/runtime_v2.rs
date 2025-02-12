@@ -33,7 +33,7 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    pub async  fn init(config: RuntimeConfig) -> anyhow::Result<Self> {
+    pub async fn init(config: RuntimeConfig) -> anyhow::Result<Self> {
         tracing::debug!("Initializing runtime");
 
         let (tx, _rx) = mpsc::channel();

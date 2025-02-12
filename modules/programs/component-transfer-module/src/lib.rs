@@ -28,10 +28,7 @@ impl Guest for Component {
 
         driver::done(&p1).map_err(|e| bindings::UserError::UnknownError(e.to_string()))?;
         driver::done(&p2).map_err(|e| bindings::UserError::UnknownError(e.to_string()))?;
-
-        let from = &input.path1.split('/').nth(2).unwrap_or("");
-        let to = &input.path2.split('/').nth(2).unwrap_or("");
-        let output = format!(" Transfer successful of {} rupees from {} to {}",input.amount,from,to);
+        let output = format!(" Transfer successful of {} rupees",input.amount);
 
         Ok(output.to_string())
     }
