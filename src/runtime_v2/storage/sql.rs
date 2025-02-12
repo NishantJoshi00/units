@@ -1,4 +1,4 @@
-use super::{DriverInfo, DriverStorage, PathInfo, Program, ProgramStorage, Resolver};
+use super::{DriverInfo, DriverStorage, PathInfo, Program, ProgramStorage, Resolver,UserStorage};
 use anyhow::{Context, Result};
 use serde::{de::DeserializeOwned, Serialize};
 use sqlx::SqlitePool;
@@ -170,7 +170,6 @@ impl DriverStorage for SqliteStorage {
         driver_info: &DriverInfo,
         engine: wasmtime::Engine,
     ) -> Result<Option<Component>> {
-        println!("i will panic here");
         let result = sqlx::query!(
             "SELECT component FROM Driver WHERE name = ? AND version = ?",
             driver_info.name,
@@ -213,5 +212,43 @@ impl DriverStorage for SqliteStorage {
         .context("Failed to remove driver")?;
 
         Ok(())
+    }
+}
+
+
+#[async_trait]
+impl UserStorage for SqliteStorage {
+    async fn insert(&self,username: &str, password: &str) -> Result<String> {
+        let userid=username;
+        
+        sqlx::query!(
+            "INSERT OR REPLACE INTO User (username, userid, password) VALUES (?, ?, ?)",
+            username,
+            userid,
+            password
+        )
+        .execute(&self.pool)
+        .await
+        .context("Failed to insert driver")?;
+
+        Ok(userid.to_string())
+    }
+
+    async fn get(
+        &self,
+        username: &str,
+        password: &str
+    ) -> anyhow::Result<Option<String>> {
+        let result = sqlx::query!(
+            "SELECT userid FROM User WHERE username = ? AND password = ?",
+            username,
+            password
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        result
+            .map(|row| Some(row.userid))
+            .ok_or_else(|| anyhow::anyhow!("User not found"))
     }
 }

@@ -5,13 +5,20 @@ use std::{
 
 use tonic::async_trait;
 
-use super::{driver::DriverInfo, process::Program, resolver::PathInfo};
+use super::{driver::DriverInfo, platform::users::User, process::Program, resolver::PathInfo};
+
+#[derive(Eq, Hash, PartialEq)]
+pub struct UserInfo{
+    pub username: String,
+    pub password: String,
+}
 
 #[derive(Clone, Default)]
 pub struct PersistentStorage {
     mount_points: Arc<RwLock<HashMap<String, PathInfo>>>,
     pub programs: Arc<RwLock<HashMap<String, Program>>>,
     pub drivers: Arc<RwLock<HashMap<DriverInfo, wasmtime::component::Component>>>,
+    pub user: Arc<RwLock<HashMap<UserInfo,String>>>,
 }
 
 mod private {
@@ -48,6 +55,12 @@ pub trait DriverStorage: dyn_clone::DynClone + private::Safety {
     ) -> Result<Option<wasmtime::component::Component>, anyhow::Error>;
     async fn list(&self, engine: wasmtime::Engine) -> Result<Vec<(DriverInfo, wasmtime::component::Component)>, anyhow::Error>;
     async fn remove(&self, driver_info: &DriverInfo) -> anyhow::Result<()>;
+}
+
+#[async_trait]
+pub trait UserStorage: dyn_clone::DynClone + private::Safety {
+    async fn insert(&self, username: &str, password: &str) -> anyhow::Result<String>;
+    async fn get(&self, username: &str, password: &str) -> anyhow::Result<Option<String>>;
 }
 
 #[async_trait]
@@ -148,6 +161,41 @@ impl DriverStorage for PersistentStorage {
     }
 }
 
+#[async_trait]
+impl UserStorage for PersistentStorage {
+    async fn insert(
+        &self,
+        username: &str,
+        password: &str
+    ) -> anyhow::Result<String> {
+        let user_info= UserInfo{
+            username:username.to_string(),
+            password:password.to_string()
+        };
+        let user_id= username.to_string();
+        self.user
+            .write()
+            .map_err(|e| anyhow::anyhow!("Poisoned Lock {:?}", e))?
+            .insert(user_info,user_id.clone());
+        Ok(user_id)
+    }
+    async fn get(
+        &self,
+        username: &str,
+        password: &str,
+    ) -> anyhow::Result<Option<String>>{
+        let user_info= UserInfo{
+            username:username.to_string(),
+            password:password.to_string()
+        };
+        let user_map = self.user.read()
+        .map_err(|e| anyhow::anyhow!("Poisoned Lock {:?}", e))?;
+
+        Ok(user_map.get(&user_info).cloned())
+    }
+
+}
+
 impl PersistentStorage {
     pub fn new() -> Self {
         Self::default()
@@ -157,5 +205,6 @@ impl PersistentStorage {
 dyn_clone::clone_trait_object!(Resolver);
 dyn_clone::clone_trait_object!(ProgramStorage);
 dyn_clone::clone_trait_object!(DriverStorage);
+dyn_clone::clone_trait_object!(UserStorage);
 
 pub mod sql;

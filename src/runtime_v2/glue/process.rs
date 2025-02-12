@@ -23,7 +23,6 @@ impl units::driver::Host for types::ProcessState {
             name: path_info.driver_name.clone(),
             version: path_info.driver_version.clone(),
         };
-
         let account_info = path_info.account_info.clone();
 
         let driver = self.get_driver(&driver_info, self.driver_runtime.engine.clone()).await?;

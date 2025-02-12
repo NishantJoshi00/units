@@ -33,14 +33,14 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    pub fn init(config: RuntimeConfig) -> anyhow::Result<Self> {
+    pub async  fn init(config: RuntimeConfig) -> anyhow::Result<Self> {
         tracing::debug!("Initializing runtime");
 
         let (tx, _rx) = mpsc::channel();
 
         Ok(Self {
-            process_layer: process::ProcessRuntime::init(config.process)?,
-            driver_layer: driver::DriverRuntime::init(config.driver)?,
+            process_layer: process::ProcessRuntime::init(config.process).await?,
+            driver_layer: driver::DriverRuntime::init(config.driver).await?,
             platform_layer: platform::Platform::init(config.platform)?,
             event_sender: Arc::new(tx),
         })
@@ -72,7 +72,6 @@ impl Runtime {
         wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|err| {
                     types::component::module::component::units::driver::DriverError::SystemError(err.to_string())
         })?;
-        println!("error is here");
         let instance =
             types::component::module::ModuleWorld::instantiate_async(&mut state, &module, &linker)
                 .await?;

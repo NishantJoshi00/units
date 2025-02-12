@@ -11,7 +11,7 @@ async fn main() -> anyhow::Result<()> {
     let config = runtime_v2::RuntimeConfig::from_path(config_path.into())?;
     let server_config = config.server.clone();
 
-    let runtime = runtime_v2::Runtime::init(config)?;
+    let runtime = runtime_v2::Runtime::init(config).await?;
 
     let grpc_server = server::Server::init(runtime)?;
 

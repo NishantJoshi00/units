@@ -1,4 +1,4 @@
-use super::storage::{DriverStorage, Resolver};
+use super::storage::{DriverStorage, Resolver, UserStorage};
 use super::types;
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
@@ -12,17 +12,19 @@ pub struct DriverRuntime {
     pub engine: wasmtime::Engine,
     pub drivers: Box<dyn DriverStorage>,
     pub resolver: Box<dyn Resolver>,
+    pub user: Box<dyn UserStorage>,
 }
 
 impl DriverRuntime {
-    pub fn init(_config: types::DriverConfig) -> anyhow::Result<Self> {
+    pub async fn init(_config: types::DriverConfig) -> anyhow::Result<Self> {
         tracing::debug!("Initializing driver runtime");
         let engine = wasmtime::Engine::new(wasmtime::Config::new().async_support(true))?;
-        let resolver = super::storage::PersistentStorage::new();
+        let resolver = super::storage::sql::SqliteStorage::new("sqlite://units.db").await?;
         Ok(Self {
             engine,
             drivers: Box::new(resolver.clone()),
-            resolver: Box::new(resolver),
+            resolver: Box::new(resolver.clone()),
+            user: Box::new(resolver),
         })
     }
 
