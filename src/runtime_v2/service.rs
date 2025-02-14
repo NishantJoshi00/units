@@ -18,6 +18,7 @@ mod server_traits {
         execution_server::Execution,
         user_sign_up_server::UserSignUp,
         user_login_server::UserLogin,
+        user_check_server::UserCheck,
     };
 }
 
@@ -27,6 +28,11 @@ struct Claims {
     username: String, 
     exp: usize,   
     iat: usize,   
+}
+
+struct UserData{
+    message: bool,
+    username:String,
 }
 
 
@@ -42,10 +48,55 @@ mod types {
     pub use crate::service::proto_types::{UnloadDriverRequest, UnloadDriverResponse};
     pub use crate::service::proto_types::{SignUpRequest,SignUpResponse};
     pub use crate::service::proto_types::{LoginRequest,LoginResponse};
+    pub use crate::service::proto_types::{CheckRequest,CheckResponse};
 }
 
+fn check_jwt<T>(request: &Request<T>) -> Result<UserData, Box<dyn Error>> {
+    let token = match request.metadata().get("Authorization") {
+        Some(token) => token.to_str()
+            .map(|s| s.trim().to_string())
+            .unwrap_or_else(|_| "Invalid token".to_string()),
+        None => return Ok(UserData{
+            message: false,
+            username: "".to_string(),
+        }),
+    };
+
+    let secret = env::var("secret").unwrap_or_else(|_| "default_value".to_string());
+    let claims = decode::<Claims>(
+        &token,
+        &DecodingKey::from_secret(secret.as_bytes()),
+        &Validation::default(),
+    );
+
+    match claims {
+        Ok(claims) => {
+            let current_time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs();
+            if claims.claims.exp < current_time as usize {
+                return Ok(UserData{
+                    message: false,
+                    username: "".to_string(),
+                }); // Expired token
+            } else {
+                return Ok(UserData{
+                    message: true,
+                    username: claims.claims.username.to_string(),
+                }); // Return username if valid
+            }
+        }
+        Err(_err) => {
+            return Ok(UserData{
+                message: false,
+                username: "".to_string(),
+            });
+        }
+    }
+}
 fn get_user_id<T>(request:&Request<T>)->Result<String,Box<dyn Error>>{
-    let token = match request.metadata().get("set-cookie") {
+    let token = match request.metadata().get("Authorization") {
         Some(token) => token.to_str()
             .map(|s| s.trim().to_string())
             .unwrap_or_else(|_| "Invalid token".to_string()),
@@ -405,7 +456,7 @@ impl server_traits::UserLogin for super::Runtime {
                     );
                     
                     (
-                        format!("{} has logged in successfully", request.username),
+                        cookie.to_string(),
                         Some(cookie)
                     )
                 } 
@@ -423,5 +474,20 @@ impl server_traits::UserLogin for super::Runtime {
         }
 
         Ok(response)
+    }
+}
+
+#[tonic::async_trait]
+impl server_traits::UserCheck for super::Runtime {
+    async fn check(
+        &self,
+        request: Request<types::CheckRequest>,
+    ) -> Result<Response<types::CheckResponse>, tonic::Status> {
+        let user_data=check_jwt(&request).map_err(|e| tonic::Status::internal(e.to_string()))?;
+        
+        Ok(tonic::Response::new(types::CheckResponse {
+            message: user_data.message,
+            username: user_data.username,
+        }))
     }
 }

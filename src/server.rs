@@ -87,6 +87,11 @@ impl Server {
                 self.runtime.clone(),
             );
 
+        let user_check_server=
+            super::service::proto_types::user_check_server::UserCheckServer::new(
+                self.runtime.clone(),
+            );
+
 
         tonic::transport::Server::builder()
             .accept_http1(true)
@@ -100,6 +105,7 @@ impl Server {
             .add_service(driver_details_service)
             .add_service(user_sign_up_service)
             .add_service(user_login_sevice)
+            .add_service(user_check_server)
             .serve_with_shutdown(socket_addr, shut_down_signal)
             .await
             .map_err(Into::into)
