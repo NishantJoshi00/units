@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package finternet;
+
+service UserSignUp {
+  rpc SignUp(SignUpRequest) returns (SignUpResponse);
+}
+
+message SignUpRequest {
+  string user_name = 1;
+  string name =2;
+  string email = 3;
+  string password = 4;
+
+}
+
+message SignUpResponse{
+    string message = 1;
+}
+
+service UserLogin {
+  rpc Login(LoginRequest) returns (LoginResponse);
+}
+
+message LoginRequest {
+  string user_name = 1;
+  string password = 2;
+
+}
+
+message LoginResponse {
+    string message = 1;
+}
+
+service UserCheck {
+  rpc Check(CheckRequest) returns (CheckResponse);
+}
+
+message CheckRequest {
+}
+
+message CheckResponse {
+    bool message = 1;
+    string user_name = 2;
+}

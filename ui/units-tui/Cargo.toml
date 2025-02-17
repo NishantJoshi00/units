@@ -1,0 +1,15 @@
+[package]
+name = "finternet-tui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+shelgon = { git = "https://github.com/NishantJoshi00/shelgon.git" }
+tokio = { version = "1.43.0", features = ["full"] }
+tonic = "0.12.3"
+anyhow = "1.0.95"
+prost = "0.13"
+
+[build-dependencies]
+tonic-build = "0.12.2"
+anyhow = "1.0.95"
