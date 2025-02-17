@@ -48,8 +48,9 @@ redis = { version = "*" }
 sqlx = { version = "0.8.3", features = [ "sqlite", "runtime-tokio", "tls-native-tls" ] }
 
 ureq = "3.0.2"
+jsonwebtoken = "9.3.0"
+blake3 = "1.5.5"
 dyn-clone = "1.0.18"
-
 [build-dependencies]
 cargo_metadata = "0.15.4"
 tonic-build = "0.12.2"

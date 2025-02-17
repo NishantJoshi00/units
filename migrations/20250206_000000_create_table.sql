@@ -21,3 +21,9 @@ CREATE TABLE IF NOT EXISTS Driver (
     component BLOB NOT NULL,
     PRIMARY KEY (name, version)
 );
+
+CREATE TABLE IF NOT EXISTS User (
+    user_name TEXT NOT NULL,
+    user_id TEXT NOT NULL PRIMARY KEY,
+    password TEXT NOT NULL
+);

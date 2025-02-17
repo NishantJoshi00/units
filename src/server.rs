@@ -74,7 +74,22 @@ impl Server {
 
         let driver_details_service =
             super::service::proto_types::driver_details_server::DriverDetailsServer::new(
-                self.runtime,
+                self.runtime.clone(),
+            );
+
+        let user_sign_up_service =
+            super::service::proto_types::user_sign_up_server::UserSignUpServer::new(
+                self.runtime.clone(),
+            );
+
+        let user_login_sevice =
+            super::service::proto_types::user_login_server::UserLoginServer::new(
+                self.runtime.clone(),
+            );
+
+        let user_check_server =
+            super::service::proto_types::user_check_server::UserCheckServer::new(
+                self.runtime.clone(),
             );
 
         tonic::transport::Server::builder()
@@ -87,6 +102,9 @@ impl Server {
             .add_service(bind_service)
             .add_service(driver_service)
             .add_service(driver_details_service)
+            .add_service(user_sign_up_service)
+            .add_service(user_login_sevice)
+            .add_service(user_check_server)
             .serve_with_shutdown(socket_addr, shut_down_signal)
             .await
             .map_err(Into::into)

@@ -1,4 +1,3 @@
-
 use super::{storage::ProgramStorage, types};
 
 #[derive(Clone)]
@@ -18,11 +17,11 @@ pub struct Program {
 impl ProcessRuntime {
     pub async fn init(config: types::ProcessConfig) -> anyhow::Result<Self> {
         tracing::debug!("Initializing process runtime");
-        let engine = wasmtime::Engine::new(wasmtime::Config::new().async_support(true)).unwrap();
+        let engine = wasmtime::Engine::new(wasmtime::Config::new().async_support(true))?;
         Ok(Self {
             engine,
             config,
-            programs: Box::new(super::storage::sql::SqliteStorage::new("sqlite:units.db").await?),
+            programs: Box::new(super::storage::sql::SqliteStorage::new("sqlite://units.db").await?),
         })
     }
 
@@ -43,7 +42,11 @@ impl ProcessRuntime {
         Ok(id)
     }
 
-    pub async fn find_program(&self, id: &str, engine: wasmtime::Engine) -> anyhow::Result<Option<Program>> {
+    pub async fn find_program(
+        &self,
+        id: &str,
+        engine: wasmtime::Engine,
+    ) -> anyhow::Result<Option<Program>> {
         self.programs.get(id, engine).await
     }
 }

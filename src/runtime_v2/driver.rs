@@ -1,4 +1,4 @@
-use super::storage::{DriverStorage, Resolver};
+use super::storage::{DriverStorage, Resolver, UserStorage};
 use super::types;
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
@@ -12,6 +12,7 @@ pub struct DriverRuntime {
     pub engine: wasmtime::Engine,
     pub drivers: Box<dyn DriverStorage>,
     pub resolver: Box<dyn Resolver>,
+    pub user: Box<dyn UserStorage>,
 }
 
 impl DriverRuntime {
@@ -22,7 +23,8 @@ impl DriverRuntime {
         Ok(Self {
             engine,
             drivers: Box::new(resolver.clone()),
-            resolver: Box::new(resolver),
+            resolver: Box::new(resolver.clone()),
+            user: Box::new(resolver),
         })
     }
 

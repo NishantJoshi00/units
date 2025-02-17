@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use urlencoding::encode;
+use std::env;
 
 
 struct Component;
@@ -120,7 +121,6 @@ struct CallabckInfo{
     balance: String,
 }
 
-// Configuration struct to hold environment variables
 struct Config {
     host: String,
     uri: String,
@@ -130,11 +130,10 @@ struct Config {
     bank_code: String,
 }
 
-// Implement a method to create default configuration
 impl Config {
     fn new() -> Self {
         Config {
-            host: format!("http://{}:8030", env!("UPI_HOST")),
+            host: format!("http://{}:8030",env::var("UPI_HOST").unwrap()),
             uri: "n8".to_string(),
             merchant_id: "INTERNALTESTUAT".to_string(),
             channel_id: "INTERNALTESTUATAPP".to_string(),
@@ -145,7 +144,6 @@ impl Config {
 }
 
 
-// Get SMS Token
 #[derive(Serialize, Deserialize, Debug)]
 #[warn(non_snake_case)]
 struct SmsTokenRequest {
@@ -186,10 +184,8 @@ fn get_sms_token(config: &Config,callback_details:&mut CallabckInfo) -> Result<(
     callback_details.device_id=device_id.clone();
     callback_details.merchantCustomerId=format!("FLP.test.{}",device_id.clone());
 
-    // Extract `smsContent` from the JSON response
     if let Some(sms_content) = parsed["payload"]["smsContent"].as_str() {
         callback_details.raw_message = sms_content.to_string();
-        // println!("{}",sms_content.to_string());
     } else {
         eprintln!("smsContent not found in the response.");
     }
@@ -325,7 +321,6 @@ fn sms_proxy_callback(config: &Config, callback_details: &CallabckInfo) -> Resul
 
 
 fn process_response(response_body: &str, env: &mut HashMap<String, String>, type_prefix: &str) {
-    // Parse the JSON response
     let parsed: Value = serde_json::from_str(response_body).expect("Failed to parse JSON");
 
     if let Some(accounts) = parsed["payload"]["accounts"].as_array() {
@@ -609,10 +604,6 @@ fn send_money_p2p(config: &Config, callback_details_of_from_acc: &mut CallabckIn
 
     let response = http::send_request(&request);
     let body = response.body;
-    callback_details_of_from_acc.balance = 
-    (callback_details_of_from_acc.balance.parse::<i32>().unwrap() - amt.parse::<i32>().unwrap()).to_string();
-    callback_details_of_from_acc.balance = 
-    (callback_details_of_to_acc.balance.parse::<i32>().unwrap() + amt.parse::<i32>().unwrap()).to_string();
     Ok(())
 }
 

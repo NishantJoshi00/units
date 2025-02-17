@@ -14,7 +14,7 @@ pub mod component {
             world: "driver-world",
             path: "wit",
             tracing: true,
-            async: true, 
+            async: true,
         });
     }
 
@@ -161,16 +161,21 @@ impl ProcessState {
     pub async fn get_driver(
         &self,
         input: &DriverInfo,
-        engine: wasmtime::Engine
+        engine: wasmtime::Engine,
     ) -> Result<
         wasmtime::component::Component,
         component::module::component::units::driver::DriverError,
     > {
-        let driver = self.driver_runtime.drivers.get(input, engine).await.map_err(|_| {
-            component::module::component::units::driver::DriverError::InvalidInput(
-                "Failed while finding driver".to_string(),
-            )
-        })?;
+        let driver = self
+            .driver_runtime
+            .drivers
+            .get(input, engine)
+            .await
+            .map_err(|_| {
+                component::module::component::units::driver::DriverError::InvalidInput(
+                    "Failed while finding driver".to_string(),
+                )
+            })?;
 
         driver.clone().ok_or(
             component::module::component::units::driver::DriverError::InvalidInput(
@@ -198,16 +203,13 @@ impl ProcessState {
                 self.event_sender.clone(),
             ),
         );
-
         let mut linker = wasmtime::component::Linker::new(&self.driver_runtime.engine);
-
         component::driver::DriverWorld::add_to_linker(&mut linker, |state: &mut DriverState| state)
             .map_err(|_| {
                 component::module::component::units::driver::DriverError::SystemError(
                     "Failed while adding driver to linker".to_string(),
                 )
             })?;
-
         // wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|e| {
         //     component::module::component::units::driver::DriverError::SystemError(e.to_string())
         // })?;
@@ -272,13 +274,16 @@ impl ProcessState {
 
         match output {
             None => {
-                let driver = self.get_driver(&driver_info, self.driver_runtime.engine.clone()).await?;
+                let driver = self
+                    .get_driver(&driver_info, self.driver_runtime.engine.clone())
+                    .await?;
                 let (mut linker, mut state) = self.get_lower_runtime(driver_info.clone())?;
 
-                wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|e| {
-                    component::module::component::units::driver::DriverError::SystemError(e.to_string())
+                wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|err| {
+                    component::module::component::units::driver::DriverError::SystemError(
+                        err.to_string(),
+                    )
                 })?;
-
                 let instance =
                     component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker)
                         .await
@@ -287,7 +292,6 @@ impl ProcessState {
                                 e.to_string(),
                             )
                         })?;
-
                 let output = instance
                     .component_units_driver()
                     .call_bind(state, &input, None)
@@ -302,14 +306,16 @@ impl ProcessState {
                             "Failed while calling bind".to_string(),
                         )
                     })?;
-
                 let path_info = PathInfo {
                     driver_name: driver_info.name,
                     driver_version: driver_info.version,
                     account_info: output,
                 };
 
-                self.driver_runtime.resolver.insert(path.clone(), path_info).await;
+                self.driver_runtime
+                    .resolver
+                    .insert(path.clone(), path_info)
+                    .await;
             }
             Some(existing) => {
                 if existing.driver_name != driver_info.name
@@ -322,9 +328,16 @@ impl ProcessState {
                     );
                 }
 
-                let driver = self.get_driver(&driver_info, self.driver_runtime.engine.clone()).await?;
-                let (linker, mut state) = self.get_lower_runtime(driver_info.clone())?;
+                let driver = self
+                    .get_driver(&driver_info, self.driver_runtime.engine.clone())
+                    .await?;
+                let (mut linker, mut state) = self.get_lower_runtime(driver_info.clone())?;
 
+                wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|err| {
+                    component::module::component::units::driver::DriverError::SystemError(
+                        err.to_string(),
+                    )
+                })?;
                 let instance =
                     component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker)
                         .await
@@ -355,7 +368,10 @@ impl ProcessState {
                     account_info: output,
                 };
 
-                self.driver_runtime.resolver.insert(path.clone(), path_info).await;
+                self.driver_runtime
+                    .resolver
+                    .insert(path.clone(), path_info)
+                    .await;
             }
         }
         Ok(())
@@ -382,25 +398,26 @@ impl DriverState {
 
 impl wasmtime_wasi::WasiView for DriverState {
     fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
-        let rt = Box::new(wasmtime_wasi::ResourceTable::new());
-        Box::leak(rt)
+        let resource = Box::new(wasmtime_wasi::ResourceTable::new());
+
+        Box::leak(resource)
     }
 
     fn ctx(&mut self) -> &mut wasmtime_wasi::WasiCtx {
-        let ctx = Box::new(wasmtime_wasi::WasiCtxBuilder::new().build());
+        let ctx = Box::new(wasmtime_wasi::WasiCtx::builder().build());
         Box::leak(ctx)
     }
 }
 
 impl wasmtime_wasi::WasiView for ProcessState {
     fn table(&mut self) -> &mut wasmtime_wasi::ResourceTable {
-        let rt = Box::new(wasmtime_wasi::ResourceTable::new());
-        Box::leak(rt)
+        let resource = Box::new(wasmtime_wasi::ResourceTable::new());
+
+        Box::leak(resource)
     }
-    
 
     fn ctx(&mut self) -> &mut wasmtime_wasi::WasiCtx {
-        let ctx = Box::new(wasmtime_wasi::WasiCtxBuilder::new().build());
+        let ctx = Box::new(wasmtime_wasi::WasiCtx::builder().build());
         Box::leak(ctx)
     }
 }
@@ -419,12 +436,14 @@ mod tests {
     fn check_send<T>(ty: PhantomData<T>)
     where
         T: Send,
-    {}
+    {
+    }
 
     fn check_sync<T>(ty: PhantomData<T>)
     where
         T: Sync,
-    {}
+    {
+    }
 
     /*
      */
