@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS Driver (
 );
 
 CREATE TABLE IF NOT EXISTS User (
-    username TEXT NOT NULL,
-    userid TEXT NOT NULL PRIMARY KEY,
+    user_name TEXT NOT NULL,
+    user_id TEXT NOT NULL PRIMARY KEY,
     password TEXT NOT NULL
 );

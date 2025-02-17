@@ -4,7 +4,7 @@ grpcurl -plaintext \
   -H "set-cookie:" \
   -d @ localhost:8080 finternet.Execution/Execute <<EOM
 {
-  "input": "{ \"path1\": \"~/amit/mono\", \"path2\": \"/accounts/Nishant1234/nishant/mono\", \"amount\": 10 }",
+  "input": "{ \"path1\": \"~/mono\", \"path2\": \"/accounts/Nishant1234/mono\", \"amount\": 10 }",
   "binary": "$(base64 -w0 -i ./target/wasm32-wasip1/release/component_transfer_module.wasm || base64 -i target/wasm32-wasip1/release/component_transfer_module.wasm)"
 }
 EOM

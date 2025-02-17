@@ -25,14 +25,14 @@ mod server_traits {
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims {
     user_id: String,
-    username: String, 
+    user_name: String, 
     exp: usize,   
     iat: usize,   
 }
 
 struct UserData{
     message: bool,
-    username:String,
+    user_name:Option<String>,
 }
 
 
@@ -58,11 +58,11 @@ fn check_jwt<T>(request: &Request<T>) -> Result<UserData, Box<dyn Error>> {
             .unwrap_or_else(|_| "Invalid token".to_string()),
         None => return Ok(UserData{
             message: false,
-            username: "".to_string(),
+            user_name: None,
         }),
     };
 
-    let secret = env::var("secret").unwrap_or_else(|_| "default_value".to_string());
+    let secret = env::var("secret").unwrap();
     let claims = decode::<Claims>(
         &token,
         &DecodingKey::from_secret(secret.as_bytes()),
@@ -78,19 +78,19 @@ fn check_jwt<T>(request: &Request<T>) -> Result<UserData, Box<dyn Error>> {
             if claims.claims.exp < current_time as usize {
                 return Ok(UserData{
                     message: false,
-                    username: "".to_string(),
+                    user_name: None,
                 }); // Expired token
             } else {
                 return Ok(UserData{
                     message: true,
-                    username: claims.claims.username.to_string(),
+                    user_name: Some(claims.claims.user_name.to_string()),
                 }); // Return username if valid
             }
         }
         Err(_err) => {
             return Ok(UserData{
                 message: false,
-                username: "".to_string(),
+                user_name:None,
             });
         }
     }
@@ -103,7 +103,7 @@ fn get_user_id<T>(request:&Request<T>)->Result<String,Box<dyn Error>>{
         None => return Err(Box::new(Status::unauthenticated("No JWT token found"))),
     };
     
-    let secret = env::var("secret").unwrap_or_else(|_| "default_value".to_string());
+    let secret = env::var("secret").unwrap();
     let claims = decode::<Claims>(
         &token,
         &DecodingKey::from_secret(secret.as_bytes()),
@@ -403,10 +403,10 @@ impl server_traits::UserSignUp for super::Runtime {
         hasher.update(request.password.as_bytes()); 
         let hash_pass = hasher.finalize(); 
         
-        self.driver_layer.user.insert(&request.username, &hash_pass.to_string())
+        self.driver_layer.user.insert(&request.user_name, &hash_pass.to_string())
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
-        let message=format!("{} has signed up successfully",request.username);
+        let message=format!("{} has signed up successfully",request.user_name);
         Ok(tonic::Response::new(types::SignUpResponse {
             message,
         }))
@@ -424,7 +424,7 @@ impl server_traits::UserLogin for super::Runtime {
         hasher.update(request.password.as_bytes());
         let hash_pass = hasher.finalize();
 
-        let user=self.driver_layer.user.get(&request.username, &hash_pass.to_string()).await;
+        let user=self.driver_layer.user.get(&request.user_name, &hash_pass.to_string()).await;
         
         let (message, set_cookie) = match user {
             Ok(None) => (String::from("User not found"), None),
@@ -434,7 +434,7 @@ impl server_traits::UserLogin for super::Runtime {
                         .unwrap()
                         .as_secs() as usize + 3600; 
                     let claims = Claims {
-                        username: request.username.clone(),
+                        user_name: request.user_name.clone(),
                         user_id: user,
                         exp: expiration,
                         iat: SystemTime::now()
@@ -442,7 +442,7 @@ impl server_traits::UserLogin for super::Runtime {
                             .unwrap()
                             .as_secs() as usize,
                     };
-                    let secret = env::var("secret").unwrap_or_else(|_| "default_value".to_string());
+                    let secret = env::var("secret").unwrap();
                     
                     let token = encode(
                         &Header::default(),
@@ -484,10 +484,19 @@ impl server_traits::UserCheck for super::Runtime {
         request: Request<types::CheckRequest>,
     ) -> Result<Response<types::CheckResponse>, tonic::Status> {
         let user_data=check_jwt(&request).map_err(|e| tonic::Status::internal(e.to_string()))?;
-        
-        Ok(tonic::Response::new(types::CheckResponse {
-            message: user_data.message,
-            username: user_data.username,
-        }))
+        match user_data.user_name{
+            Some(user_name)=>{
+                Ok(tonic::Response::new(types::CheckResponse {
+                    message: user_data.message,
+                    user_name: user_name.to_string(),
+                }))
+            }
+            None=>{
+                Ok(tonic::Response::new(types::CheckResponse {
+                    message: user_data.message,
+                    user_name: String::from(""),
+                }))
+            }
+        }
     }
 }

@@ -220,16 +220,15 @@ impl DriverStorage for SqliteStorage {
 impl UserStorage for SqliteStorage {
     async fn insert(&self,username: &str, password: &str) -> Result<String> {
         let userid=username;
-        
         sqlx::query!(
-            "INSERT OR REPLACE INTO User (username, userid, password) VALUES (?, ?, ?)",
+            "INSERT INTO User (user_name, user_id, password) VALUES (?, ?, ?)",
             username,
             userid,
             password
         )
         .execute(&self.pool)
         .await
-        .context("Failed to insert driver")?;
+        .context("Failed to insert User")?;
 
         Ok(userid.to_string())
     }
@@ -240,7 +239,7 @@ impl UserStorage for SqliteStorage {
         password: &str
     ) -> anyhow::Result<Option<String>> {
         let result = sqlx::query!(
-            "SELECT userid FROM User WHERE username = ? AND password = ?",
+            "SELECT user_id FROM User WHERE user_name = ? AND password = ?",
             username,
             password
         )
@@ -248,7 +247,7 @@ impl UserStorage for SqliteStorage {
         .await?;
 
         result
-            .map(|row| Some(row.userid))
+            .map(|row| Some(row.user_id))
             .ok_or_else(|| anyhow::anyhow!("User not found"))
     }
 }

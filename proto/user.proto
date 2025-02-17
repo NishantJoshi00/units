@@ -7,7 +7,7 @@ service UserSignUp {
 }
 
 message SignUpRequest {
-  string username = 1;
+  string user_name = 1;
   string name =2;
   string email = 3;
   string password = 4;
@@ -23,7 +23,7 @@ service UserLogin {
 }
 
 message LoginRequest {
-  string username = 1;
+  string user_name = 1;
   string password = 2;
 
 }
@@ -41,5 +41,5 @@ message CheckRequest {
 
 message CheckResponse{
     bool message = 1;
-    string username = 2;
+    string user_name = 2;
 }
