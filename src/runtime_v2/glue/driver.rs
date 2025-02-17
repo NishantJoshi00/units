@@ -31,7 +31,6 @@ mod http_impl {
     use crate::runtime_v2::types::DriverState;
 
     impl http::Host for DriverState {
-
         async fn send_request(&mut self, request: http::Request) -> http::Response {
             // Clone the client first to avoid any potential thread contention
             let client = HTTP_CLIENT.clone();

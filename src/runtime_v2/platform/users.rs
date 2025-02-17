@@ -22,4 +22,7 @@ impl Users for () {
 }
 
 #[derive(serde::Deserialize)]
-pub struct User { pub user_id: String, pub username: String, }
+pub struct User {
+    pub user_id: String,
+    pub username: String,
+}

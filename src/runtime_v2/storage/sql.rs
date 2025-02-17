@@ -1,4 +1,4 @@
-use super::{DriverInfo, DriverStorage, PathInfo, Program, ProgramStorage, Resolver,UserStorage};
+use super::{DriverInfo, DriverStorage, PathInfo, Program, ProgramStorage, Resolver, UserStorage};
 use anyhow::{Context, Result};
 use serde::{de::DeserializeOwned, Serialize};
 use sqlx::SqlitePool;
@@ -215,11 +215,10 @@ impl DriverStorage for SqliteStorage {
     }
 }
 
-
 #[async_trait]
 impl UserStorage for SqliteStorage {
-    async fn insert(&self,username: &str, password: &str) -> Result<String> {
-        let userid=username;
+    async fn insert(&self, username: &str, password: &str) -> Result<String> {
+        let userid = username;
         sqlx::query!(
             "INSERT INTO User (user_name, user_id, password) VALUES (?, ?, ?)",
             username,
@@ -233,11 +232,7 @@ impl UserStorage for SqliteStorage {
         Ok(userid.to_string())
     }
 
-    async fn get(
-        &self,
-        username: &str,
-        password: &str
-    ) -> anyhow::Result<Option<String>> {
+    async fn get(&self, username: &str, password: &str) -> anyhow::Result<Option<String>> {
         let result = sqlx::query!(
             "SELECT user_id FROM User WHERE user_name = ? AND password = ?",
             username,

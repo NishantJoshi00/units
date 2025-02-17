@@ -1,4 +1,3 @@
-
 use super::{storage::ProgramStorage, types};
 
 #[derive(Clone)]
@@ -43,7 +42,11 @@ impl ProcessRuntime {
         Ok(id)
     }
 
-    pub async fn find_program(&self, id: &str, engine: wasmtime::Engine) -> anyhow::Result<Option<Program>> {
+    pub async fn find_program(
+        &self,
+        id: &str,
+        engine: wasmtime::Engine,
+    ) -> anyhow::Result<Option<Program>> {
         self.programs.get(id, engine).await
     }
 }

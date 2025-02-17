@@ -14,7 +14,7 @@ pub mod component {
             world: "driver-world",
             path: "wit",
             tracing: true,
-            async: true, 
+            async: true,
         });
     }
 
@@ -161,16 +161,21 @@ impl ProcessState {
     pub async fn get_driver(
         &self,
         input: &DriverInfo,
-        engine: wasmtime::Engine
+        engine: wasmtime::Engine,
     ) -> Result<
         wasmtime::component::Component,
         component::module::component::units::driver::DriverError,
     > {
-        let driver = self.driver_runtime.drivers.get(input, engine).await.map_err(|_| {
-            component::module::component::units::driver::DriverError::InvalidInput(
-                "Failed while finding driver".to_string(),
-            )
-        })?;
+        let driver = self
+            .driver_runtime
+            .drivers
+            .get(input, engine)
+            .await
+            .map_err(|_| {
+                component::module::component::units::driver::DriverError::InvalidInput(
+                    "Failed while finding driver".to_string(),
+                )
+            })?;
 
         driver.clone().ok_or(
             component::module::component::units::driver::DriverError::InvalidInput(
@@ -188,7 +193,7 @@ impl ProcessState {
             wasmtime::Store<DriverState>,
         ),
         component::module::component::units::driver::DriverError,
-    > { 
+    > {
         let state = wasmtime::Store::new(
             &self.driver_runtime.engine,
             DriverState::new(
@@ -245,7 +250,6 @@ impl ProcessState {
         driver_info: DriverInfo,
         input: String,
     ) -> Result<(), component::module::component::units::driver::DriverError> {
-        
         // valid driver :: check
         if self
             .driver_runtime
@@ -265,16 +269,20 @@ impl ProcessState {
                 ),
             );
         }
-        
+
         let output = self.driver_runtime.resolver.get(path.as_str()).await;
-        
+
         match output {
             None => {
-                let driver = self.get_driver(&driver_info, self.driver_runtime.engine.clone()).await?;
+                let driver = self
+                    .get_driver(&driver_info, self.driver_runtime.engine.clone())
+                    .await?;
                 let (mut linker, mut state) = self.get_lower_runtime(driver_info.clone())?;
 
                 wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|err| {
-                    component::module::component::units::driver::DriverError::SystemError(err.to_string())
+                    component::module::component::units::driver::DriverError::SystemError(
+                        err.to_string(),
+                    )
                 })?;
                 let instance =
                     component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker)
@@ -304,7 +312,10 @@ impl ProcessState {
                     account_info: output,
                 };
 
-                self.driver_runtime.resolver.insert(path.clone(), path_info).await;
+                self.driver_runtime
+                    .resolver
+                    .insert(path.clone(), path_info)
+                    .await;
             }
             Some(existing) => {
                 if existing.driver_name != driver_info.name
@@ -317,11 +328,15 @@ impl ProcessState {
                     );
                 }
 
-                let driver = self.get_driver(&driver_info, self.driver_runtime.engine.clone()).await?;
+                let driver = self
+                    .get_driver(&driver_info, self.driver_runtime.engine.clone())
+                    .await?;
                 let (mut linker, mut state) = self.get_lower_runtime(driver_info.clone())?;
 
                 wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|err| {
-                    component::module::component::units::driver::DriverError::SystemError(err.to_string())
+                    component::module::component::units::driver::DriverError::SystemError(
+                        err.to_string(),
+                    )
                 })?;
                 let instance =
                     component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker)
@@ -353,7 +368,10 @@ impl ProcessState {
                     account_info: output,
                 };
 
-                self.driver_runtime.resolver.insert(path.clone(), path_info).await;
+                self.driver_runtime
+                    .resolver
+                    .insert(path.clone(), path_info)
+                    .await;
             }
         }
         Ok(())
@@ -418,12 +436,14 @@ mod tests {
     fn check_send<T>(ty: PhantomData<T>)
     where
         T: Send,
-    {}
+    {
+    }
 
     fn check_sync<T>(ty: PhantomData<T>)
     where
         T: Sync,
-    {}
+    {
+    }
 
     /*
      */

@@ -8,7 +8,7 @@ use tonic::async_trait;
 use super::{driver::DriverInfo, platform::users::User, process::Program, resolver::PathInfo};
 
 #[derive(Eq, Hash, PartialEq)]
-pub struct UserInfo{
+pub struct UserInfo {
     pub username: String,
     pub password: String,
 }
@@ -18,7 +18,7 @@ pub struct PersistentStorage {
     mount_points: Arc<RwLock<HashMap<String, PathInfo>>>,
     pub programs: Arc<RwLock<HashMap<String, Program>>>,
     pub drivers: Arc<RwLock<HashMap<DriverInfo, wasmtime::component::Component>>>,
-    pub user: Arc<RwLock<HashMap<UserInfo,String>>>,
+    pub user: Arc<RwLock<HashMap<UserInfo, String>>>,
 }
 
 mod private {
@@ -37,8 +37,13 @@ pub trait Resolver: dyn_clone::DynClone + private::Safety {
 #[async_trait]
 pub trait ProgramStorage: dyn_clone::DynClone + private::Safety {
     async fn insert(&self, id: &str, program: super::process::Program) -> anyhow::Result<()>;
-    async fn get(&self, id: &str, engine: wasmtime::Engine) -> Result<Option<Program>, anyhow::Error>;
-    async fn list(&self, engine: wasmtime::Engine) -> Result<Vec<(String, Program)>, anyhow::Error>;
+    async fn get(
+        &self,
+        id: &str,
+        engine: wasmtime::Engine,
+    ) -> Result<Option<Program>, anyhow::Error>;
+    async fn list(&self, engine: wasmtime::Engine)
+        -> Result<Vec<(String, Program)>, anyhow::Error>;
 }
 
 #[async_trait]
@@ -53,7 +58,10 @@ pub trait DriverStorage: dyn_clone::DynClone + private::Safety {
         driver_info: &DriverInfo,
         engine: wasmtime::Engine,
     ) -> Result<Option<wasmtime::component::Component>, anyhow::Error>;
-    async fn list(&self, engine: wasmtime::Engine) -> Result<Vec<(DriverInfo, wasmtime::component::Component)>, anyhow::Error>;
+    async fn list(
+        &self,
+        engine: wasmtime::Engine,
+    ) -> Result<Vec<(DriverInfo, wasmtime::component::Component)>, anyhow::Error>;
     async fn remove(&self, driver_info: &DriverInfo) -> anyhow::Result<()>;
 }
 
@@ -97,7 +105,11 @@ impl ProgramStorage for PersistentStorage {
             .insert(id.to_string(), program);
         Ok(())
     }
-    async fn get(&self, id: &str, _engine: wasmtime::Engine) -> Result<Option<Program>, anyhow::Error> {
+    async fn get(
+        &self,
+        id: &str,
+        _engine: wasmtime::Engine,
+    ) -> Result<Option<Program>, anyhow::Error> {
         Ok(self
             .programs
             .read()
@@ -105,7 +117,10 @@ impl ProgramStorage for PersistentStorage {
             .get(id)
             .cloned())
     }
-    async fn list(&self, _engine: wasmtime::Engine) -> Result<Vec<(String, Program)>, anyhow::Error> {
+    async fn list(
+        &self,
+        _engine: wasmtime::Engine,
+    ) -> Result<Vec<(String, Program)>, anyhow::Error> {
         Ok(self
             .programs
             .read()
@@ -132,7 +147,7 @@ impl DriverStorage for PersistentStorage {
     async fn get(
         &self,
         driver_info: &DriverInfo,
-        _engine: wasmtime::Engine
+        _engine: wasmtime::Engine,
     ) -> Result<Option<wasmtime::component::Component>, anyhow::Error> {
         Ok(self
             .drivers
@@ -142,7 +157,10 @@ impl DriverStorage for PersistentStorage {
             .cloned())
     }
 
-    async fn list(&self, _engine: wasmtime::Engine) -> Result<Vec<(DriverInfo, wasmtime::component::Component)>, anyhow::Error> {
+    async fn list(
+        &self,
+        _engine: wasmtime::Engine,
+    ) -> Result<Vec<(DriverInfo, wasmtime::component::Component)>, anyhow::Error> {
         Ok(self
             .drivers
             .read()
@@ -163,37 +181,30 @@ impl DriverStorage for PersistentStorage {
 
 #[async_trait]
 impl UserStorage for PersistentStorage {
-    async fn insert(
-        &self,
-        username: &str,
-        password: &str
-    ) -> anyhow::Result<String> {
-        let user_info= UserInfo{
-            username:username.to_string(),
-            password:password.to_string()
+    async fn insert(&self, username: &str, password: &str) -> anyhow::Result<String> {
+        let user_info = UserInfo {
+            username: username.to_string(),
+            password: password.to_string(),
         };
-        let user_id= username.to_string();
+        let user_id = username.to_string();
         self.user
             .write()
             .map_err(|e| anyhow::anyhow!("Poisoned Lock {:?}", e))?
-            .insert(user_info,user_id.clone());
+            .insert(user_info, user_id.clone());
         Ok(user_id)
     }
-    async fn get(
-        &self,
-        username: &str,
-        password: &str,
-    ) -> anyhow::Result<Option<String>>{
-        let user_info= UserInfo{
-            username:username.to_string(),
-            password:password.to_string()
+    async fn get(&self, username: &str, password: &str) -> anyhow::Result<Option<String>> {
+        let user_info = UserInfo {
+            username: username.to_string(),
+            password: password.to_string(),
         };
-        let user_map = self.user.read()
-        .map_err(|e| anyhow::anyhow!("Poisoned Lock {:?}", e))?;
+        let user_map = self
+            .user
+            .read()
+            .map_err(|e| anyhow::anyhow!("Poisoned Lock {:?}", e))?;
 
         Ok(user_map.get(&user_info).cloned())
     }
-
 }
 
 impl PersistentStorage {

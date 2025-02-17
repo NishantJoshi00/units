@@ -77,21 +77,20 @@ impl Server {
                 self.runtime.clone(),
             );
 
-        let user_sign_up_service=
+        let user_sign_up_service =
             super::service::proto_types::user_sign_up_server::UserSignUpServer::new(
                 self.runtime.clone(),
             );
 
-        let user_login_sevice=
+        let user_login_sevice =
             super::service::proto_types::user_login_server::UserLoginServer::new(
                 self.runtime.clone(),
             );
 
-        let user_check_server=
+        let user_check_server =
             super::service::proto_types::user_check_server::UserCheckServer::new(
                 self.runtime.clone(),
             );
-
 
         tonic::transport::Server::builder()
             .accept_http1(true)

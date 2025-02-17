@@ -7,7 +7,11 @@ fn main() -> anyhow::Result<()> {
     tonic_build::configure()
         .file_descriptor_set_path(out_dir.join("finternet_descriptor.bin"))
         .compile_protos(
-            &["proto/service.proto", "proto/health_check.proto","proto/user.proto"],
+            &[
+                "proto/service.proto",
+                "proto/health_check.proto",
+                "proto/user.proto",
+            ],
             &["proto"],
         )?;
 
