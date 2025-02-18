@@ -1,3 +1,4 @@
+use anyhow::Context;
 use grpc::proto_types::{BindRequest, LoadDriverRequest, LoginRequest};
 use shelgon::{command, renderer};
 
@@ -334,7 +335,7 @@ impl command::Execute for FinShellExecutor {
     fn prepare(&self, cmd: &str) -> shelgon::Prepare {
         let base = cmd.split_whitespace().next().unwrap_or_default();
         match base {
-            "mount" => shelgon::Prepare {
+            "link" => shelgon::Prepare {
                 command: cmd.to_string(),
                 stdin_required: true,
             },
@@ -386,8 +387,8 @@ impl command::Execute for FinShellExecutor {
 }
 
 fn main() -> anyhow::Result<()> {
-    let username = std::env::var("UNITS_USERNAME")?;
-    let password = std::env::var("UNITS_PASSWORD")?;
+    let username = std::env::var("UNITS_USERNAME").context("`UNITS_USERNAME` not found")?;
+    let password = std::env::var("UNITS_PASSWORD").context("`UNITS_PASSWORD` not found")?;
 
     let rt = tokio::runtime::Runtime::new()?;
 
