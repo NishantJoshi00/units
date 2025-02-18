@@ -1,4 +1,3 @@
-
 pub struct Config {
-    pub url: String
+    pub url: String,
 }

@@ -29,7 +29,7 @@ message LoginRequest {
 }
 
 message LoginResponse{
-    string message = 1;
+    string jwt_token = 1;
 }
 
 service UserCheck {

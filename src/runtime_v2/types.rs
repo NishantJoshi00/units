@@ -296,14 +296,14 @@ impl ProcessState {
                     .component_units_driver()
                     .call_bind(state, &input, None)
                     .await
-                    .map_err(|_| {
+                    .map_err(|e| {
                         component::module::component::units::driver::DriverError::SystemError(
-                            "Failed while calling bind".to_string(),
+                            e.to_string(),
                         )
                     })?
-                    .map_err(|_| {
+                    .map_err(|e| {
                         component::module::component::units::driver::DriverError::SystemError(
-                            "Failed while calling bind".to_string(),
+                            e.to_string(),
                         )
                     })?;
                 let path_info = PathInfo {

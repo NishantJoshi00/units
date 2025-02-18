@@ -433,7 +433,7 @@ impl server_traits::UserLogin for super::Runtime {
             .get(&request.user_name, &hash_pass.to_string())
             .await;
 
-        let (message, set_cookie) = match user {
+        let (jwt_token, set_cookie) = match user {
             Ok(None) => (String::from("User not found"), None),
             Ok(Some(user)) => {
                 let expiration = SystemTime::now()
@@ -466,7 +466,7 @@ impl server_traits::UserLogin for super::Runtime {
             Err(_) => (String::from("Error retrieving user"), None),
         };
 
-        let mut response = Response::new(types::LoginResponse { message });
+        let mut response = Response::new(types::LoginResponse { jwt_token });
 
         if let Some(cookie_value) = set_cookie {
             response.metadata_mut().insert(
