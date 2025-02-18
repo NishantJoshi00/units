@@ -1,6 +1,7 @@
 use anyhow::Context;
-use grpc::proto_types::{BindRequest, LoadDriverRequest, LoginRequest};
+use grpc::proto_types::{BindRequest, CheckRequest, LoadDriverRequest, LoginRequest};
 use shelgon::{command, renderer};
+use tonic::metadata::{Ascii, MetadataMap, MetadataValue};
 
 mod config;
 mod grpc;
@@ -30,6 +31,7 @@ enum Command {
     Clear,
     Exit,
     Help,
+    Check,
     Stat(String),
     Cat(String),
     Unknown(String),
@@ -46,6 +48,7 @@ impl From<&str> for Command {
             Some("clear") => Command::Clear,
             Some("exit") => Command::Exit,
             Some("help") => Command::Help,
+            Some("whoami") => Command::Check,
             Some("stat") => Command::Stat(parts.get(1).unwrap_or(&"").to_string()),
             Some("cat") => Command::Cat(parts.get(1).unwrap_or(&"").to_string()),
             Some("insdriver") => {
@@ -199,6 +202,7 @@ impl command::Execute for FinShellExecutor {
                     "  clear                                             Clear the screen".to_string(),
                     "  exit                                              Exit the shell".to_string(),
                     "  help                                              Display this help text".to_string(),
+                    "whoami                                              Display the current user".to_string(),
                     "  insdriver <driver_name> <driver_version> <driver_fn> Load a driver".to_string(),
                     "  ls                                                List files in the current directory".to_string(),
                     "  lsdriver                                             List loaded kernel modules".to_string(),
@@ -207,6 +211,28 @@ impl command::Execute for FinShellExecutor {
                     "  rmdriver <driver_name> <driver_version>              Unload a driver".to_string(),
                     "  stat <path>                                       Display detailed information about a file".to_string(),
                 ]
+            }
+            Command::Check => {
+                let token = ctx.user_token.clone();
+
+                // Create metadata map
+                let mut metadata = tonic::metadata::MetadataMap::new();
+
+                // Convert token to ASCII metadata value
+                let auth_value = MetadataValue::<Ascii>::try_from(token.as_str())
+                    .map_err(|e| anyhow::anyhow!("Invalid token format: {}", e))?;
+
+                // Insert authorization header
+                metadata.insert("authorization", auth_value);
+                let request = CheckRequest {};
+
+                let request_with_metadata =
+                    tonic::Request::from_parts(metadata, tonic::Extensions::default(), request);
+
+                let output =
+                    rt.block_on(ctx.client.user_check_client.check(request_with_metadata))?;
+
+                vec![format!("The user name is {}", output.get_ref().user_name)]
             }
             Command::Pwd => vec![ctx.current_dir.to_string()],
             Command::Clear => return Ok(shelgon::OutputAction::Clear),
@@ -305,20 +331,34 @@ impl command::Execute for FinShellExecutor {
                 driver_version,
                 path,
             } => {
+                let token = ctx.user_token.clone();
+
                 let input = cmd
                     .stdin
                     .clone()
                     .ok_or_else(|| anyhow::anyhow!("stdin is required"))?;
-                let output = rt.block_on(ctx.client.bind_client.bind(BindRequest {
+
+                let mut metadata = tonic::metadata::MetadataMap::new();
+
+                let auth_value = MetadataValue::<Ascii>::try_from(token.as_str())
+                    .map_err(|e| anyhow::anyhow!("Invalid token format: {}", e))?;
+
+                metadata.insert("authorization", auth_value);
+                let request = BindRequest {
                     driver_name: driver_name.clone(),
                     driver_version: driver_version.clone(),
                     path: path.clone(),
                     account_info: input.join("\n"),
-                }))?;
+                };
+
+                let request_with_metadata =
+                    tonic::Request::from_parts(metadata, tonic::Extensions::default(), request);
+
+                let _output = rt.block_on(ctx.client.bind_client.bind(request_with_metadata))?;
 
                 vec![format!(
-                    "The bind action has been completed: {}@{} -> {}",
-                    driver_name, driver_version, path
+                    "The bind action has been completed: {}@{} -> {} and the token is {}",
+                    driver_name, driver_version, path, token
                 )]
             }
         };
@@ -397,13 +437,13 @@ fn main() -> anyhow::Result<()> {
     };
     let mut client = rt.block_on(grpc::Clients::new(config.url))?;
 
-
-    let token = rt.block_on(client.user_login_client.login(LoginRequest {
-        user_name: username,
-        password,
-    }))?.into_inner().message;
-
-
+    let token = rt
+        .block_on(client.user_login_client.login(LoginRequest {
+            user_name: username,
+            password,
+        }))?
+        .into_inner()
+        .jwt_token;
     let app = renderer::App::<FinShellExecutor>::new_with_executor(
         rt,
         FinShellExecutor {},

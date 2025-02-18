@@ -41,6 +41,7 @@ struct AgeCredentials {
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct AgeProof {
+    name: String,
     day: u8,
     month: u8,
     year: u16,

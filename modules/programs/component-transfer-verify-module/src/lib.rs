@@ -18,9 +18,9 @@ impl Guest for Component {
             .map_err(|e| bindings::UserError::UnknownError(e.to_string()))?;
 
         if !check::check_credential(&input.cred_path, 18)? {
-            return Err(bindings::UserError::InvalidInput(
-                "Age is less than 18".to_string(),
-            ));
+            let output = format!(" Transfer was not successful as age is less than 18");
+
+            return Ok(output.to_string());
         }
 
         let data = Data {
