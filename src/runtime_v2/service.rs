@@ -239,7 +239,7 @@ impl server_traits::Bind for super::Runtime {
         );
 
         let path = if let Some(suffix) = request.path.strip_prefix("~/") {
-            format!("/accounts/{}/{}", user_id, suffix)
+            format!("/accounts/{}/{}",user_id,suffix)
         } else {
             request.path.clone()
         };

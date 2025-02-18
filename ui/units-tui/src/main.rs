@@ -1,5 +1,6 @@
 use grpc::proto_types::{BindRequest, LoadDriverRequest, LoginRequest};
 use shelgon::{command, renderer};
+use tonic::metadata::{MetadataMap, MetadataValue,Ascii};
 
 mod config;
 mod grpc;
@@ -304,20 +305,45 @@ impl command::Execute for FinShellExecutor {
                 driver_version,
                 path,
             } => {
+                let token = ctx.user_token.clone();
+                
+                // println!("token is {}",token);
                 let input = cmd
                     .stdin
                     .clone()
                     .ok_or_else(|| anyhow::anyhow!("stdin is required"))?;
-                let output = rt.block_on(ctx.client.bind_client.bind(BindRequest {
+                // let input = "{\"name\":\"Natrajan\",\"amount\":100}".to_string();
+
+                // Create metadata map
+                let mut metadata = tonic::metadata::MetadataMap::new();
+                
+                // Convert token to ASCII metadata value
+                let auth_value = MetadataValue::<Ascii>::try_from(token.as_str())
+                    .map_err(|e| anyhow::anyhow!("Invalid token format: {}", e))?;
+                
+                // Insert authorization header
+                metadata.insert("authorization", auth_value);
+                    
+                // let mut request = tonic::Request::new(BindRequest {
+                //     driver_name: driver_name.clone(),
+                //     driver_version: driver_version.clone(),
+                //     path: path.clone(),
+                //     account_info: input,
+                // });
+                let request = BindRequest {
                     driver_name: driver_name.clone(),
                     driver_version: driver_version.clone(),
                     path: path.clone(),
                     account_info: input.join("\n"),
-                }))?;
+                };
+
+                let request_with_metadata = tonic::Request::from_parts(metadata, tonic::Extensions::default(), request);
+
+                let output = rt.block_on(ctx.client.bind_client.bind(request_with_metadata))?;
 
                 vec![format!(
-                    "The bind action has been completed: {}@{} -> {}",
-                    driver_name, driver_version, path
+                    "The bind action has been completed: {}@{} -> {} and the token is {}",
+                    driver_name, driver_version, path,token
                 )]
             }
         };
@@ -334,7 +360,7 @@ impl command::Execute for FinShellExecutor {
     fn prepare(&self, cmd: &str) -> shelgon::Prepare {
         let base = cmd.split_whitespace().next().unwrap_or_default();
         match base {
-            "mount" => shelgon::Prepare {
+            "link" => shelgon::Prepare {
                 command: cmd.to_string(),
                 stdin_required: true,
             },
