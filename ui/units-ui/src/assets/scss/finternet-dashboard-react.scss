@@ -1,0 +1,221 @@
+@import "finternet-dashboard/custom/functions";
+@import "finternet-dashboard/custom/variables";
+@import "finternet-dashboard/custom/mixins";
+
+@import "~bootstrap/scss/root";
+@import "~bootstrap/scss/reboot";
+@import "~bootstrap/scss/type";
+@import "~bootstrap/scss/images";
+@import "~bootstrap/scss/code";
+@import "~bootstrap/scss/grid";
+@import "~bootstrap/scss/tables";
+@import "~bootstrap/scss/forms";
+@import "~bootstrap/scss/buttons";
+@import "~bootstrap/scss/transitions";
+@import "~bootstrap/scss/dropdown";
+@import "~bootstrap/scss/button-group";
+@import "~bootstrap/scss/input-group";
+@import "~bootstrap/scss/custom-forms";
+@import "~bootstrap/scss/nav";
+@import "~bootstrap/scss/navbar";
+@import "~bootstrap/scss/card";
+@import "~bootstrap/scss/breadcrumb";
+@import "~bootstrap/scss/pagination";
+@import "~bootstrap/scss/badge";
+@import "~bootstrap/scss/jumbotron";
+@import "~bootstrap/scss/alert";
+@import "~bootstrap/scss/progress";
+@import "~bootstrap/scss/media";
+@import "~bootstrap/scss/list-group";
+@import "~bootstrap/scss/close";
+@import "~bootstrap/scss/modal";
+@import "~bootstrap/scss/tooltip";
+@import "~bootstrap/scss/popover";
+@import "~bootstrap/scss/carousel";
+@import "~bootstrap/scss/utilities";
+@import "~bootstrap/scss/print";
+
+@import "finternet-dashboard/custom/reboot";
+@import "finternet-dashboard/custom/utilities";
+@import "finternet-dashboard/custom/components";
+
+@import "finternet-dashboard/custom/vendors";
+
+@import "finternet-dashboard/docs/variables";
+@import "finternet-dashboard/docs/nav";
+@import "finternet-dashboard/docs/clipboard-js";
+@import "finternet-dashboard/docs/component-examples";
+@import "finternet-dashboard/docs/prism";
+@import "finternet-dashboard/docs/content";
+@import "finternet-dashboard/docs/sidebar";
+@import "finternet-dashboard/docs/footer";
+
+@import "react/react-differences";
+
+
+.main-content {
+    display: flex;
+    justify-content: center;
+}
+
+.shadow.card {
+    width: 45%;
+    margin-top: 100px;
+}
+
+.shadow:hover {
+    box-shadow: 10px 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+.shadow.users {
+    width: 600px;
+    position: relative;
+}
+
+.navbar-vertical {
+    top: 52px !important;
+}
+
+.navbar-brand-img {
+    width: 40px;
+    margin-left: 20px;
+    margin-top: 3px;
+}
+
+.backButton {
+    position: absolute;
+    right: 22px;
+    top: 10px;
+}
+
+.sub-table-container {
+    background: #f1f2f7;
+    padding: 20px;
+}
+
+.sub-table {
+    background: #fff;
+    border-radius: 5px;
+    padding: 20px;
+}
+
+.support-tokens-container {
+    display: flex;
+    width: 80%;
+    transition: justify-content 1s;
+    justify-content: space-around;
+}
+
+
+.upload-container {
+    transition: all 1s;    
+    max-width: 380px;
+    height: 60vh;
+}
+
+.programs {
+    width: 50% !important;
+    max-width: 600px;
+}
+
+.execute-container {
+    width: 80%;
+    display: flex;
+    justify-content: space-between;
+}
+
+.execute-button {
+    position: absolute;
+    bottom: 1rem;
+    right: calc(50% + 8rem);
+    left: 1rem;
+    width: auto !important;
+}
+
+#executeName {
+    // height: 200px;
+}
+
+.execute-card {
+    padding: 1rem !important;
+    display: flex !important;
+    flex-direction: row !important;
+    width: 70% !important;
+    min-height: 200px !important;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.execute-form {
+    width: 50%;
+    border-right: 1px solid #cad1d7;
+    padding-right: 1rem;    
+    min-height: 200px !important;
+}
+
+.dropdown-item {
+    padding-left: 30px !important;
+}
+
+
+.driver-form {
+    width: 35% !important;
+    min-height: 500px;
+}
+
+.bindCTA {
+    position: absolute;
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    width: auto !important;
+}
+
+.driver-form-body {
+    position: relative;
+}
+
+.breadcrumb-section {
+    position: absolute;
+    left: 0;
+}
+
+.breadcrumb-section .breadcrumb {
+    background: transparent;
+}
+
+.breadcrumb-item::first-letter {
+    text-transform: uppercase;
+}
+
+.navigateToBindCTA {
+    position: absolute;
+    width: 14% !important;
+    right: 1rem;
+    top: 0.5rem;
+    padding: 0.4rem 0.4rem
+}
+
+.driverSelectForm {
+    margin-left: 10px;
+}
+
+.driverSelectForm .dropdown-toggle{
+    background: #fff;
+    color: #000;
+    border: none;
+}
+
+.selected-program-row {
+    background:#f9f2f2;
+}
+
+.fileUploadLabel {
+    border-style: dashed !important;
+}
+
+.dropdown-menu {
+    transform: none !important;
+}

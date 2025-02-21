@@ -1,0 +1,18 @@
+.program-container {
+    display: flex;
+    justify-content: space-between;
+    width: -webkit-fill-available;
+    margin-top: 100px;
+    padding: 0 50px 0 200px;
+}
+
+.activity-log-hidden {
+    justify-content: center
+}
+
+.show-activity-log {
+    border: 0;
+    background: inherit;
+    position: absolute;
+    right: 15px;
+}

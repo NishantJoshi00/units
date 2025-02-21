@@ -1,0 +1,50 @@
+.onboarding-form {
+    width: 400px;
+    height: 720px;
+    background: #000000;
+    border-radius: 0.5rem;
+    border: 5px solid #fff;
+    outline: 5px solid #000000;
+    padding: 1rem;
+    position: relative;
+}
+
+.onboarding-form .logo {
+    width: 20%;
+}
+
+.welcome-desc {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 2rem;
+    margin-top: 2.5rem;
+    color: #fff;
+}
+
+footer {
+    position: absolute;
+    bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    left: 0;
+    right: 0;
+}
+
+footer svg {
+    margin-right: 10px;
+}
+
+.finternet {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.footer-desc {
+    text-align: center;
+    display: flex;
+    align-items: center;
+    color: #FFF;
+    font-size: 12px;
+}
