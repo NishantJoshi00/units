@@ -3,15 +3,14 @@ use std::{error::Error, sync::Arc};
 use starknet::{
     accounts::{AccountError, ExecutionEncoding, SingleOwnerAccount},
     contract::ContractFactory,
-    core::types::{BlockId, Felt, FlattenedSierraClass, contract::SierraClass},
+    core::types::{contract::SierraClass, BlockId, BroadcastedDeclareTransactionV3, Felt, FlattenedSierraClass},
     providers::{
-        jsonrpc::{HttpTransport, JsonRpcClient},
-        ProviderError, Url, Provider
+        jsonrpc::{HttpTransport, JsonRpcClient}, Provider, ProviderError, Url
     },
     signers::{LocalWallet, SigningKey},
 };
-use starknet::accounts::Account;
-use starknet::core::types::BlockTag;
+use starknet::accounts::{Account, ConnectedAccount};
+use starknet::core::types::{BlockTag, BroadcastedInvokeTransactionV3, ResourceBoundsMapping, ResourceBounds, DataAvailabilityMode, BroadcastedInvokeTransaction};
 use starknet::core::types::contract::SierraClassDebugInfo;
 
 use super::types::ProvableConfig;
@@ -79,7 +78,7 @@ impl ProvableRuntime {
         let program_exists = self.provider.get_class(BlockId::Tag(BlockTag::Pending), class_hash.clone()).await;
         
         if program_exists.is_ok() {
-            return Ok(class_hash.to_string());
+            return Ok(class_hash.to_hex_string());
         }
         
         let flattened_program = program.flatten().unwrap();
@@ -91,11 +90,12 @@ impl ProvableRuntime {
             result.transaction_hash
         );
 
-        Ok(result.class_hash.to_string())
+        Ok(result.class_hash.to_hex_string())
     }
     
     pub async fn declare_and_deploy_program(&self, class: Vec<u8>, compiled_class_hash: String, constructor_calldata: Vec<String>) -> anyhow::Result<String> {
         let class_hash = self.declare_program(class, compiled_class_hash).await?;
+        tracing::info!("Declare was succesful, class hash {:?}", class_hash);
         let deploy_address = self.deploy_program(class_hash, constructor_calldata).await?;
         Ok(deploy_address)
     }
@@ -105,7 +105,7 @@ impl ProvableRuntime {
         class_hash: String,
         constructor_calldata: Vec<String>,
     ) -> anyhow::Result<String> {
-        tracing::info!("Creating contract factory for account deployment");
+        tracing::info!("Creating contract factory for program deployment");
         let contract_factory = ContractFactory::new(
             // hash of the account program
             Felt::from_hex_unchecked(&class_hash),
@@ -136,5 +136,36 @@ impl ProvableRuntime {
             transaction_hash
         );
         Ok(address.to_hex_string())
+    }
+    
+    pub async fn execute_program(&self, user_address: String, input: String, signature: String) -> anyhow::Result<String> {
+        let user_address = Felt::from_hex_unchecked(user_address.as_str());
+
+        let txn_input = BroadcastedInvokeTransactionV3 {
+            sender_address: user_address.clone(),
+            calldata: input.split(",").into_iter().map(|s| Felt::from_hex_unchecked(s)).collect(),
+            signature: signature.split(",").into_iter().map(|s| Felt::from_hex_unchecked(s)).collect(),
+            nonce: self.provider.get_nonce(BlockId::Tag(BlockTag::Pending), user_address).await?,
+            resource_bounds: ResourceBoundsMapping {
+                l1_gas: ResourceBounds {
+                    max_amount: 0,
+                    max_price_per_unit: 0
+                },
+                l2_gas: ResourceBounds {
+                    max_amount: 0,
+                    max_price_per_unit: 0
+                },
+            },
+            tip: 0,
+            paymaster_data: vec![],
+            account_deployment_data: vec![],
+            nonce_data_availability_mode: DataAvailabilityMode::L1,
+            fee_data_availability_mode: DataAvailabilityMode::L1,
+            is_query: false
+        };
+
+        let invoke_result = self.provider.add_invoke_transaction(BroadcastedInvokeTransaction::V3(txn_input)).await?;
+
+        Ok(invoke_result.transaction_hash.to_hex_string())
     }
 }

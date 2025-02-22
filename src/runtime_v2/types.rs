@@ -1,10 +1,15 @@
+use anyhow::anyhow;
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use starknet::macros::selector;
 use std::collections::HashMap;
 use std::sync::{mpsc, Arc};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde::ser::SerializeMap;
+use tracing_subscriber::fmt::format;
 use wasmtime::component::Component;
 
 // use wasmtime_wasi::preview1::WasiP1Ctx;
+use crate::runtime_v2::provable;
+use crate::runtime_v2::provable::ProvableRuntime;
 use wasmtime_wasi::{WasiCtx, WasiView};
 
 use super::driver::{self, DriverInfo};
@@ -110,6 +115,7 @@ pub enum Loc {
 pub struct ProcessState {
     pub ctx: UserCtx,
     pub driver_runtime: driver::DriverRuntime,
+    pub provable_runtime: ProvableRuntime,
     pub platform: Platform,
     pub event_sender: Arc<mpsc::Sender<Event>>,
     pub descriptors: HashMap<String, Descriptor>,
@@ -133,12 +139,19 @@ pub struct DriverState {
     // wasi_ctx: WasiCtx,
 }
 
+#[derive(Deserialize)]
+struct CairoInput {
+    pub program_input: String,
+    pub user_signature: String,
+}
+
 impl ProcessState {
     pub fn new(
         ctx: UserCtx,
         driver_runtime: driver::DriverRuntime,
         platform: Platform,
         event_sender: Arc<mpsc::Sender<Event>>,
+        provable_runtime: provable::ProvableRuntime,
     ) -> Self {
         Self {
             ctx,
@@ -146,8 +159,8 @@ impl ProcessState {
             platform,
             event_sender,
             descriptors: HashMap::new(),
-            // table: ResourceTable::new(),
-            // wasi_ctx: wasmtime_wasi::WasiCtxBuilder::new().build(),
+            provable_runtime, // table: ResourceTable::new(),
+                              // wasi_ctx: wasmtime_wasi::WasiCtxBuilder::new().build(),
         }
     }
 
@@ -173,10 +186,7 @@ impl ProcessState {
         &self,
         input: &DriverInfo,
         engine: wasmtime::Engine,
-    ) -> Result<
-        DriverComponent,
-        component::module::component::units::driver::DriverError,
-    > {
+    ) -> Result<ProgramComponent, component::module::component::units::driver::DriverError> {
         let driver = self
             .driver_runtime
             .drivers
@@ -296,33 +306,58 @@ impl ProcessState {
                     )
                 })?;
 
-                let driver = match driver {
-                    DriverComponent::WASM(driver) => driver.module,
-                    _ => unreachable!("WASM component shouldn't be able to contact a component of different type")
-                };
-                
-                let instance =
-                    component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker)
+                let output = match driver {
+                    ProgramComponent::WASM(driver) => {
+                        let instance = component::driver::DriverWorld::instantiate_async(
+                            &mut state,
+                            &driver.module,
+                            &linker,
+                        )
                         .await
                         .map_err(|e| {
                             component::module::component::units::driver::DriverError::SystemError(
                                 e.to_string(),
                             )
                         })?;
-                let output = instance
-                    .component_units_driver()
-                    .call_bind(state, &input, None)
-                    .await
-                    .map_err(|e| {
-                        component::module::component::units::driver::DriverError::SystemError(
-                            e.to_string(),
-                        )
-                    })?
-                    .map_err(|e| {
-                        component::module::component::units::driver::DriverError::SystemError(
-                            e.to_string(),
-                        )
-                    })?;
+                        instance
+                            .component_units_driver()
+                            .call_bind(state, &input, None)
+                            .await
+                            .map_err(|e| {
+                                component::module::component::units::driver::DriverError::SystemError(
+                                    e.to_string(),
+                                )
+                            })?
+                            .map_err(|e| {
+                                component::module::component::units::driver::DriverError::SystemError(
+                                    e.to_string(),
+                                )
+                            })?
+                    }
+                    ProgramComponent::Cairo(driver) => {
+                        // TODO: change error type of `perform_bind` to allow Cairo and WASM errors
+                        let cairo_input: CairoInput = serde_json::from_str(input.as_str()).unwrap();
+
+                        let program_input = cairo_input.program_input;
+                        let program_input_w_driver_details = format!(
+                            "0x1,{},{},{}",
+                            driver.program_address,
+                            selector!("bind"),
+                            program_input
+                        );
+
+                        // TODO: change error type of `perform_bind` to allow Cairo and WASM errors
+                        self.provable_runtime
+                            .execute_program(
+                                self.ctx.user_id.clone(),
+                                program_input_w_driver_details,
+                                cairo_input.user_signature,
+                            )
+                            .await
+                            .unwrap()
+                    }
+                };
+
                 let path_info = PathInfo {
                     driver_name: driver_info.name,
                     driver_version: driver_info.version,
@@ -356,13 +391,13 @@ impl ProcessState {
                     )
                 })?;
 
-                let driver = match driver {
-                    DriverComponent::WASM(driver) => driver.module,
-                    _ => unreachable!("WASM component shouldn't be able to contact a component of different type")
-                };
-                
-                let instance =
-                    component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker)
+                let output = match driver {
+                    ProgramComponent::WASM(driver) => {
+                        let instance = component::driver::DriverWorld::instantiate_async(
+                            &mut state,
+                            &driver.module,
+                            &linker,
+                        )
                         .await
                         .map_err(|e| {
                             component::module::component::units::driver::DriverError::SystemError(
@@ -370,20 +405,45 @@ impl ProcessState {
                             )
                         })?;
 
-                let output = instance
-                    .component_units_driver()
-                    .call_bind(state, &input, Some(&existing.account_info))
-                    .await
-                    .map_err(|_| {
-                        component::module::component::units::driver::DriverError::SystemError(
-                            "Failed while calling bind".to_string(),
-                        )
-                    })?
-                    .map_err(|_| {
-                        component::module::component::units::driver::DriverError::SystemError(
-                            "Failed while calling bind".to_string(),
-                        )
-                    })?;
+                        instance
+                            .component_units_driver()
+                            .call_bind(state, &input, Some(&existing.account_info))
+                            .await
+                            .map_err(|_| {
+                                component::module::component::units::driver::DriverError::SystemError(
+                                    "Failed while calling bind".to_string(),
+                                )
+                            })?
+                            .map_err(|_| {
+                                component::module::component::units::driver::DriverError::SystemError(
+                                    "Failed while calling bind".to_string(),
+                                )
+                            })?
+                    }
+                    ProgramComponent::Cairo(driver) => {
+                        // TODO: change error type of `perform_bind` to allow Cairo and WASM errors
+                        let cairo_input: CairoInput = serde_json::from_str(input.as_str()).unwrap();
+
+                        let program_input = cairo_input.program_input;
+                        let program_input_w_driver_details = format!(
+                            "0x1,{},{},{}",
+                            driver.program_address,
+                            selector!("bind"),
+                            program_input
+                        );
+
+                        // TODO: change error type of `perform_bind` to allow Cairo and WASM errors
+                        // implement bind in Cairo
+                        self.provable_runtime
+                            .execute_program(
+                                self.ctx.user_id.clone(),
+                                program_input_w_driver_details,
+                                cairo_input.user_signature,
+                            )
+                            .await
+                            .unwrap()
+                    }
+                };
 
                 let path_info = PathInfo {
                     driver_name: driver_info.name,
@@ -452,22 +512,25 @@ pub struct ServerConfig {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub enum DriverComponent {
+pub enum ProgramComponent {
     WASM(WasmComponent),
-    Cairo(CairoComponent)
+    Cairo(CairoComponent),
 }
 
 #[derive(Clone)]
 pub struct WasmComponent {
-    pub module: Component
+    pub module: Component,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct CairoComponent {
-    pub program_address: String
+    pub program_address: String,
 }
 impl Serialize for WasmComponent {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
         let mut map = serializer.serialize_map(None)?;
         // TODO: handle unwrap
         map.serialize_entry("module", self.module.serialize().unwrap().as_slice());
@@ -475,10 +538,12 @@ impl Serialize for WasmComponent {
     }
 }
 
-
 // TODO: need to test this
 impl<'de> Deserialize<'de> for WasmComponent {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         struct Visitor;
 
         impl<'de> serde::de::Visitor<'de> for Visitor {
@@ -490,20 +555,30 @@ impl<'de> Deserialize<'de> for WasmComponent {
 
             #[allow(unused_mut)]
             fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-                where
-                    A: serde::de::SeqAccess<'de>,
+            where
+                A: serde::de::SeqAccess<'de>,
             {
                 // TODO: figure out a way to pass this form runtime
-                let engine = wasmtime::Engine::new(wasmtime::Config::new().async_support(true)).unwrap();;
+                let engine =
+                    wasmtime::Engine::new(wasmtime::Config::new().async_support(true)).unwrap();
                 let module: Component = unsafe {
-                    Component::deserialize(&engine, seq.next_element::<Vec<u8>>()?.ok_or_else(|| serde::de::Error::invalid_length(1, &"expected 1 parameters"))?).unwrap()
+                    Component::deserialize(
+                        &engine,
+                        seq.next_element::<Vec<u8>>()?.ok_or_else(|| {
+                            serde::de::Error::invalid_length(1, &"expected 1 parameters")
+                        })?,
+                    )
+                    .unwrap()
                 };
 
                 if seq.next_element::<serde::de::IgnoredAny>()?.is_some() {
-                    return Err(serde::de::Error::invalid_length(2, &"expected 1 parameters"));
+                    return Err(serde::de::Error::invalid_length(
+                        2,
+                        &"expected 1 parameters",
+                    ));
                 }
 
-                Ok(WasmComponent {module})
+                Ok(WasmComponent { module })
             }
         }
 

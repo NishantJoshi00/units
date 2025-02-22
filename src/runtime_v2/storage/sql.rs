@@ -4,7 +4,7 @@ use serde::{de::DeserializeOwned, Serialize};
 use sqlx::SqlitePool;
 use tonic::async_trait;
 use wasmtime::component::Component;
-use crate::runtime_v2::types::DriverComponent;
+use crate::runtime_v2::types::ProgramComponent;
 
 #[derive(Clone)]
 pub struct SqliteStorage {
@@ -150,7 +150,7 @@ impl ProgramStorage for SqliteStorage {
 
 #[async_trait]
 impl DriverStorage for SqliteStorage {
-    async fn insert(&self, driver_info: DriverInfo, module: DriverComponent) -> Result<()> {
+    async fn insert(&self, driver_info: DriverInfo, module: ProgramComponent) -> Result<()> {
         let component_bytes = serde_json::to_vec(&module).context("Failed to serialize driver component")?;
 
         sqlx::query!(
@@ -170,7 +170,7 @@ impl DriverStorage for SqliteStorage {
         &self,
         driver_info: &DriverInfo,
         engine: wasmtime::Engine,
-    ) -> Result<Option<DriverComponent>> {
+    ) -> Result<Option<ProgramComponent>> {
         let result = sqlx::query!(
             "SELECT component FROM Driver WHERE name = ? AND version = ?",
             driver_info.name,
@@ -181,12 +181,12 @@ impl DriverStorage for SqliteStorage {
 
         
         result
-            .map(|row| serde_json::from_slice::<DriverComponent>(&row.component)
+            .map(|row| serde_json::from_slice::<ProgramComponent>(&row.component)
                 .map_err(|e| anyhow!("Failed to deserialize driver component {}", e)))
             .transpose()
     }
 
-    async fn list(&self, engine: wasmtime::Engine) -> Result<Vec<(DriverInfo, DriverComponent)>> {
+    async fn list(&self, engine: wasmtime::Engine) -> Result<Vec<(DriverInfo, ProgramComponent)>> {
         let rows = sqlx::query!("SELECT name, version, component FROM Driver")
             .fetch_all(&self.pool)
             .await?;
@@ -197,7 +197,7 @@ impl DriverStorage for SqliteStorage {
                 name: row.name,
                 version: row.version,
             };
-            let component = serde_json::from_slice::<DriverComponent>(&row.component)?;
+            let component = serde_json::from_slice::<ProgramComponent>(&row.component)?;
             drivers.push((driver_info, component));
         }
 

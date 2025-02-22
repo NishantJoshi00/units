@@ -3,7 +3,7 @@ use crate::runtime_v2::driver::DriverInfo;
 use crate::runtime_v2::types;
 use crate::runtime_v2::types::component::module::component::units;
 use crate::runtime_v2::types::component::module::component::units::driver::DriverError;
-use crate::runtime_v2::types::DriverComponent;
+use crate::runtime_v2::types::ProgramComponent;
 
 impl units::driver::Host for types::ProcessState {
     async fn intend(&mut self, input: String) -> Result<String, DriverError> {
@@ -32,7 +32,7 @@ impl units::driver::Host for types::ProcessState {
             .await?;
         
         let driver = match driver {
-            DriverComponent::WASM(driver) => driver.module,
+            ProgramComponent::WASM(driver) => driver.module,
             _ => unreachable!("WASM component shouldn't be able to contact a component of different type")
         };
         
@@ -113,7 +113,7 @@ impl units::driver::Host for types::ProcessState {
         })?;
         
         let driver = match driver {
-            DriverComponent::WASM(driver) => driver.module,
+            ProgramComponent::WASM(driver) => driver.module,
             _ => unreachable!("WASM component shouldn't be able to contact a component of different type")
         };
         
@@ -187,7 +187,7 @@ impl units::driver::Host for types::ProcessState {
         })?;
 
         let driver = match driver {
-            DriverComponent::WASM(driver) => driver.module,
+            ProgramComponent::WASM(driver) => driver.module,
             _ => unreachable!("WASM component shouldn't be able to contact a component of different type")
         };
         
@@ -240,7 +240,7 @@ impl units::driver::Host for types::ProcessState {
         })?;
 
         let driver = match driver {
-            DriverComponent::WASM(driver) => driver.module,
+            ProgramComponent::WASM(driver) => driver.module,
             _ => unreachable!("WASM component shouldn't be able to contact a component of different type")
         };
         

@@ -2,5 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/accounts/account_cairo" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/drivers/component_cred_driver_cairo" vcs="Git" />
   </component>
 </project>

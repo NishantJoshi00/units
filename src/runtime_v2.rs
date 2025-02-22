@@ -63,6 +63,7 @@ impl Runtime {
                 self.driver_layer,
                 self.platform_layer,
                 self.event_sender,
+                self.provable_layer
             ),
         );
 

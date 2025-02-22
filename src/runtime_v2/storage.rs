@@ -4,7 +4,7 @@ use std::{
 };
 
 use tonic::async_trait;
-use crate::runtime_v2::types::DriverComponent;
+use crate::runtime_v2::types::ProgramComponent;
 
 use super::{driver::DriverInfo, platform::users::User, process::Program, resolver::PathInfo};
 
@@ -19,7 +19,7 @@ pub struct UserInfo {
 pub struct PersistentStorage {
     mount_points: Arc<RwLock<HashMap<String, PathInfo>>>,
     pub programs: Arc<RwLock<HashMap<String, Program>>>,
-    pub drivers: Arc<RwLock<HashMap<DriverInfo, DriverComponent>>>,
+    pub drivers: Arc<RwLock<HashMap<DriverInfo, ProgramComponent>>>,
     pub user: Arc<RwLock<HashMap<UserInfo, String>>>,
 }
 
@@ -53,17 +53,17 @@ pub trait DriverStorage: dyn_clone::DynClone + private::Safety {
     async fn insert(
         &self,
         driver_info: DriverInfo,
-        module: DriverComponent,
+        module: ProgramComponent,
     ) -> anyhow::Result<()>;
     async fn get(
         &self,
         driver_info: &DriverInfo,
         engine: wasmtime::Engine,
-    ) -> Result<Option<DriverComponent>, anyhow::Error>;
+    ) -> Result<Option<ProgramComponent>, anyhow::Error>;
     async fn list(
         &self,
         engine: wasmtime::Engine,
-    ) -> Result<Vec<(DriverInfo, DriverComponent)>, anyhow::Error>;
+    ) -> Result<Vec<(DriverInfo, ProgramComponent)>, anyhow::Error>;
     async fn remove(&self, driver_info: &DriverInfo) -> anyhow::Result<()>;
 }
 
@@ -138,7 +138,7 @@ impl DriverStorage for PersistentStorage {
     async fn insert(
         &self,
         driver_info: DriverInfo,
-        module: DriverComponent,
+        module: ProgramComponent,
     ) -> anyhow::Result<()> {
         self.drivers
             .write()
@@ -150,7 +150,7 @@ impl DriverStorage for PersistentStorage {
         &self,
         driver_info: &DriverInfo,
         _engine: wasmtime::Engine,
-    ) -> Result<Option<DriverComponent>, anyhow::Error> {
+    ) -> Result<Option<ProgramComponent>, anyhow::Error> {
         Ok(self
             .drivers
             .read()
@@ -162,7 +162,7 @@ impl DriverStorage for PersistentStorage {
     async fn list(
         &self,
         _engine: wasmtime::Engine,
-    ) -> Result<Vec<(DriverInfo, DriverComponent)>, anyhow::Error> {
+    ) -> Result<Vec<(DriverInfo, ProgramComponent)>, anyhow::Error> {
         Ok(self
             .drivers
             .read()

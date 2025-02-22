@@ -1,6 +1,6 @@
 use super::Runtime;
 use crate::runtime_v2::driver::DriverInfo;
-use crate::runtime_v2::types::{DriverComponent, ProcessState, WasmComponent};
+use crate::runtime_v2::types::{CairoComponent, ProgramComponent, ProcessState, WasmComponent};
 use crate::runtime_v2::types::UserCtx;
 use crate::service::proto_types::DriverDetail;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
@@ -39,7 +39,7 @@ mod types {
     pub use crate::service::proto_types::{BindRequest, BindResponse};
     pub use crate::service::proto_types::{CheckRequest, CheckResponse};
     pub use crate::service::proto_types::{
-        DriverDetailsRequest, DriverDetailsResponse, DriverType,
+        DriverDetailsRequest, DriverDetailsResponse, ProgramType,
     };
     pub use crate::service::proto_types::{ExecutionRequest, ExecutionResponse};
     pub use crate::service::proto_types::{ListProgramRequest, ListProgramResponse, Program};
@@ -100,6 +100,13 @@ fn check_jwt<T>(request: &Request<T>) -> Result<UserData, Box<dyn Error>> {
     }
 }
 fn get_user_id<T>(request: &Request<T>) -> Result<String, Box<dyn Error>> {
+    
+    // hacky implementation to fetch account address from headers
+    // the address is being stored in the User table, eventually we can
+    // fetch the user address from there
+    if let Some(address) = request.metadata().get("CairoAccountAddress") {
+        return Ok(address.to_str()?.to_string())
+    } 
     let token = match request.metadata().get("Authorization") {
         Some(token) => token
             .to_str()
@@ -264,6 +271,7 @@ impl server_traits::Bind for super::Runtime {
             self.driver_layer.clone(),
             self.platform_layer.clone(),
             self.event_sender.clone(),
+            self.provable_layer.clone()
         );
 
         let path = if let Some(suffix) = request.path.strip_prefix("~/") {
@@ -382,17 +390,19 @@ impl server_traits::Driver for super::Runtime {
                         tracing::error!(error = %e, "Failed to create module for driver");
                         tonic::Status::internal(e.to_string())
                     })?;
-                DriverComponent::WASM(WasmComponent {
+                ProgramComponent::WASM(WasmComponent {
                     module
                 })
             },
             // CAIRO
             1 => {
-                self.provable_layer.declare_program(request.driver_binary, request.driver_compiled_hash).await.map_err(|e| {
+                let program_address = self.provable_layer.declare_and_deploy_program(request.driver_binary, request.driver_compiled_hash, request.driver_constructor_data).await.map_err(|e| {
                     tracing::error!(error = %e, "Failed to deploy driver");
                     tonic::Status::internal(e.to_string())
                 })?;
-                panic!("bla bla");
+                ProgramComponent::Cairo(CairoComponent {
+                    program_address
+                })
             },
             _ => return Err(tonic::Status::invalid_argument("Invalid driver type")),
         };

@@ -1,4 +1,4 @@
-use crate::runtime_v2::types::DriverComponent;
+use crate::runtime_v2::types::ProgramComponent;
 use super::storage::{DriverStorage, Resolver, UserStorage};
 use super::types;
 
@@ -32,7 +32,7 @@ impl DriverRuntime {
     pub async fn add_driver(
         &self,
         name: String,
-        module: DriverComponent,
+        module: ProgramComponent,
         version: String,
     ) -> anyhow::Result<()> {
         let driver_info = DriverInfo { name, version };

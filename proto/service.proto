@@ -27,7 +27,7 @@ message PathMapping {
     string account_info = 4;
 }
 
-enum DriverType {
+enum ProgramType {
   WASM = 0;
   CAIRO = 1;
 }
@@ -35,11 +35,12 @@ enum DriverType {
 message LoadDriverRequest {
   string driver_name = 1;
   string driver_version = 2;
-  DriverType driver_type = 3;
+  ProgramType driver_type = 3;
   bytes driver_binary = 4;
-  // TODO: maybe have different structs for each driver_type inside
-  // LoadDriverRequest
+  // TODO: maybe have different structs for each driver_type inside LoadDriverRequest
   string driver_compiled_hash = 5;
+  // TODO: make this bytes
+  repeated string driver_constructor_data = 6;
 }
 
 message LoadDriverResponse {
@@ -70,6 +71,7 @@ message BindRequest {
   string driver_version = 2;
   string path = 3;
   string account_info = 4;
+  optional string signature = 5;
 }
 
 message BindResponse {
