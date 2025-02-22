@@ -1,84 +1,91 @@
-# Try UNITS Locally
+# Running UNITS Locally
 
-This guide will help you set up and run UNITS in your local environment.
+This guide walks you through setting up and running UNITS in your local development environment. We'll cover the initial setup, configuration, and basic usage to get you started quickly.
 
-## Prerequisites
+## Setting Up Your Environment
 
-Required:
-- Rust 1.75 or later
-- Cargo
-- Protocol Buffers compiler
-- Git
+UNITS requires a few key components to run. You'll need Rust 1.75 or later with component support, the Protocol Buffers compiler, and SQLite. Redis is optional but recommended for production deployments.
 
-Optional:
-- Redis (enabled by default, can be disabled)
-- grpcurl (for API testing)
+Start by cloning the repository and setting up your environment variables:
 
-## Quick Start
-
-### 1. Setup
-
-Clone and enter the repository:
 ```bash
-git clone https://github.com/yourusername/finternet-runtime.git
-cd finternet-runtime
+git clone https://github.com/yourusername/units.git
+cd units
+
+export UNITS_USERNAME=your_username
+export UNITS_PASSWORD=your_password
+export secret=your_jwt_secret
 ```
 
-### 2. Configuration
+Next, create and initialize your SQLite database:
 
-Create your local configuration:
 ```bash
-# Copy default configuration
-cp config/development.toml config/development.toml
+sqlite3 units.db < migrations/20250206_000000_create_table.sql
 ```
 
-The default configuration provides:
-- Local server on 127.0.0.1:8080
-- In-memory or Redis storage
-- Default driver limits
+This creates the core tables: Resolver for path mapping, Program for WebAssembly programs, Driver for WebAssembly drivers, and User for authentication.
 
-### 3. Build and Run
+## Building and Running
 
-Build the project:
+With the environment ready, build the project:
+
 ```bash
-# Build with Redis support (default)
 cargo build --release
+```
 
-# Build without Redis
+If you don't need Redis support, you can build without it:
+
+```bash
 cargo build --release --no-default-features
 ```
 
-Start the server:
-```bash
-# Basic start
-cargo run --release -- config/development.toml
+Start the server using the development configuration:
 
-# With debug logging
+```bash
+cargo run --release -- config/development.toml
+```
+
+During development, you might want more detailed logging:
+
+```bash
 RUST_LOG=debug cargo run -- config/development.toml
 ```
 
-### 4. Verify Installation
+## First Steps with UNITS
 
-Check if the server is running:
+Let's walk through a basic workflow to ensure everything is working. First, create a test user and get authentication set up:
+
 ```bash
-# Using grpcurl
-grpcurl -plaintext localhost:8080 grpc.health.v1.Health/Check
+# Create a new user
+grpcurl -plaintext -d @- localhost:8080 units.UserSignUp/SignUp << EOM
+{
+  "user_name": "testuser",
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "testpass123"
+}
+EOM
 
-# List available services
-grpcurl -plaintext localhost:8080 list
+# Log in to get your JWT token
+grpcurl -plaintext -d @- localhost:8080 units.UserLogin/Login << EOM
+{
+  "user_name": "testuser",
+  "password": "testpass123"
+}
+EOM
 ```
 
-## Quick Test
-
-### 1. Load a Sample Driver
+Now let's load a sample driver. Navigate to the example driver directory and build it:
 
 ```bash
-# Build the example driver
 cd modules/drivers/component-driver
 cargo component build --release
+```
 
-# Load the driver
-grpcurl -plaintext -d @- localhost:8080 finternet.Driver/LoadDriver << EOM
+Load the driver into UNITS:
+
+```bash
+grpcurl -plaintext -d @- localhost:8080 units.Driver/LoadDriver << EOM
 {
   "driver_name": "example-driver",
   "driver_version": "1.0.0",
@@ -87,75 +94,47 @@ grpcurl -plaintext -d @- localhost:8080 finternet.Driver/LoadDriver << EOM
 EOM
 ```
 
-### 2. Run a Sample Program
+Finally, let's run a sample program:
 
 ```bash
-# Build the example program
 cd modules/programs/component-transfer-module
 cargo component build --release
 
 # Submit the program
-grpcurl -plaintext -d @- localhost:8080 finternet.Execution/Submit << EOM
+grpcurl -plaintext -d @- localhost:8080 units.Execution/Submit << EOM
 {
   "name": "transfer-module",
   "version": "1.0.0",
   "binary": "$(base64 -w0 target/wasm32-wasi/release/component-transfer-module.wasm)"
 }
 EOM
-
-# Execute the program
-grpcurl -plaintext -d @- localhost:8080 finternet.Execution/Execute << EOM
-{
-  "input": "{\"action\":\"transfer\",\"amount\":100}",
-  "program_id": "received-program-id"
-}
-EOM
 ```
 
-## Development Tips
+## Development Tools
 
-### Logging
-- Use `RUST_LOG=debug` for detailed logs
-- Check `finternet.log` for runtime logs
-- Use `tracing` macros in your code for consistent logging
+UNITS provides two interfaces for development and testing. The Terminal UI offers a command-line interface that's perfect for development:
 
-### Common Issues
-
-1. **Server Won't Start**
-- Check port availability
-- Verify Redis connection (if enabled)
-- Check configuration file syntax
-
-2. **Driver Loading Fails**
-- Verify WASM binary format
-- Check driver interface implementation
-- Confirm version compatibility
-
-3. **Program Execution Fails**
-- Check input format
-- Verify driver dependencies
-- Review error messages in logs
-
-### Using the Test Script
-
-The repository includes a test script for quick verification:
 ```bash
-./test.sh
+cd ui/units-tui
+cargo run
 ```
 
-This script:
-1. Builds the runtime
-2. Starts the server
-3. Loads a test driver
-4. Runs a test program
-5. Verifies the results
+The Web Dashboard provides a more visual interface:
 
-## Next Steps
+```bash
+cd ui/units-ui
+npm install
+npm start
+```
 
-After getting the runtime working locally, you can:
-1. Create your own drivers
-2. Develop custom modules
-3. Integrate with your systems
-4. Contribute to the project
+## Troubleshooting Common Issues
 
-For detailed development guidelines, refer to our [Development Guidelines](./development-guidelines.md).
+If the server won't start, check that port 8080 is available and verify Redis is running if you're using it. For authentication issues, ensure your environment variables are set correctly and your JWT token hasn't expired.
+
+When loading drivers fails, verify the WebAssembly binary format and check that the component interface is implemented correctly. The logs will often provide helpful information about what's going wrong.
+
+## Moving Forward
+
+Once you have the basic setup working, you can start creating your own drivers using the driver template and developing custom programs. The architecture documentation provides deeper insight into how these components work together.
+
+Remember to check the development guidelines in DEVELOPMENT.md when you're ready to start contributing to the project. We encourage you to join our community and help make UNITS even better.

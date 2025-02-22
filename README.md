@@ -1,119 +1,165 @@
-# Finternet Runtime
+# UNITS Runtime
 
-<div align="center">
+UNITS is a modular WebAssembly runtime system designed for financial transactions and asset management. At its core, it provides a secure and flexible environment for executing WebAssembly modules while managing financial assets through a driver-based architecture.
 
-<a href="https://finternetlab.io/">
-  <img src="https://finternetlab.io/images/headers/finternet_logo_for_website-transformed1.png" alt="Finternet" height="46">
-</a>
+## Getting Started
 
-[![Rust](https://img.shields.io/badge/rust-1.75+-93450a.svg)](https://www.rust-lang.org/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![GitHub issues](https://img.shields.io/github/issues/yourusername/finternet-runtime.svg)](https://github.com/yourusername/finternet-runtime/issues)
+Starting with UNITS requires Rust 1.75 or later and a few core dependencies. First, ensure you have Rust installed with component support and the Protocol Buffers compiler. You'll also need SQLite for data persistence.
 
-A modular and extensible WebAssembly runtime system for financial transactions and asset management
-
-[Website](https://finternetlab.io/) •
-[Architecture](#architecture) •
-[Quick Start](#quick-start) •
-[Documentation](#documentation) •
-[Contributing](#contributing)
-
-</div>
-
-## Overview
-
-Finternet Runtime is a three-tier architecture system that provides:
-
-1. **Process Layer**: Direct user interaction layer for executing workflows (WebAssembly modules)
-2. **Driver Layer**: Intermediary layer providing abstraction over platform-specific operations
-3. **Platform Layer**: Low-level system access and services integration
-
-Key Features:
-- 📦 WebAssembly Component Model support
-- 🔌 Dynamic driver loading/unloading
-- 💾 Pluggable storage backends (Redis, in-memory)
-- ⛓️ Solana blockchain integration
-- 🌐 gRPC/gRPC-Web API interface
-- 🔍 Built-in health checks and metrics
-- ⚡ WASI support
-
-## Overview
-
-Finternet Runtime is a three-tier runtime system that provides:
-
-- **Process Layer**: Direct user interaction for executing workflows
-- **Driver Layer**: Asset abstraction and platform operations
-- **Platform Layer**: System services and storage integration
-
-Key Features:
-- 📦 WebAssembly Component Model support
-- 🔌 Dynamic driver loading/unloading
-- 💾 Pluggable storage backends
-- ⛓️ Solana blockchain integration
-- 🌐 gRPC/gRPC-Web API interface
-- 🔍 Built-in health checks
-
-## Quick Start
+Begin by cloning the repository:
 
 ```bash
-# Clone the repository
-git clone https://github.com/NishantJoshi00/units.git
-
-# Enter the directory
+git clone https://github.com/yourusername/units.git
 cd units
+```
 
-# Build the project
+Before building the project, set up your environment variables for authentication:
+
+```bash
+export UNITS_USERNAME=your_username
+export UNITS_PASSWORD=your_password
+export secret=your_jwt_secret
+```
+
+Now initialize your database:
+
+```bash
+sqlite3 units.db < migrations/20250206_000000_create_table.sql
+```
+
+You can now build and start the server:
+
+```bash
 cargo build --release
-
-# Start the server
 cargo run --release -- config/development.toml
 ```
 
-## Documentation
+For development with debug logging enabled:
 
-Our documentation is organized into three main sections:
+```bash
+RUST_LOG=debug cargo run -- config/development.toml
+```
 
-### [📐 Architecture](docs/ARCHITECTURE.md)
-Detailed explanation of Finternet Runtime's design and components:
-- Three-tier architecture
-- System flow and interactions
-- Security model
-- Extension points
+## Working with the API 
 
-### [🚀 Try Locally](docs/TRY_LOCALLY.md)
-Get started with running Finternet Runtime:
-- Prerequisites and setup
-- Configuration options
-- Quick test guide
-- Development tips
+UNITS exposes its functionality through a gRPC API. Here's how to interact with the key services:
 
-### [📚 Development Guidelines](docs/DEVELOPMENT.md)
-Learn how to develop for Finternet Runtime:
-- Driver development
-- Module development
-- Best practices
-- Contributing guidelines
+Create a new user and get authentication token:
+```bash
+# Sign up
+grpcurl -plaintext -d @- localhost:8080 units.UserSignUp/SignUp << EOM
+{
+  "user_name": "testuser",
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "testpass123"
+}
+EOM
+
+# Log in and get JWT token
+grpcurl -plaintext -d @- localhost:8080 units.UserLogin/Login << EOM
+{
+  "user_name": "testuser",
+  "password": "testpass123"
+}
+EOM
+```
+
+Load a driver into the system:
+```bash
+grpcurl -plaintext -d @- localhost:8080 units.Driver/LoadDriver << EOM
+{
+  "driver_name": "example-driver",
+  "driver_version": "1.0.0",
+  "driver_binary": "$(base64 -w0 path/to/driver.wasm)"
+}
+EOM
+```
+
+Submit and execute a program:
+```bash
+# Submit program
+grpcurl -plaintext -d @- localhost:8080 units.Execution/Submit << EOM
+{
+  "name": "example-program",
+  "version": "1.0.0",
+  "binary": "$(base64 -w0 path/to/program.wasm)"
+}
+EOM
+
+# Execute program (include your JWT token)
+grpcurl -plaintext \
+  -H "Authorization: your.jwt.token" \
+  -d @- localhost:8080 units.Execution/Execute << EOM
+{
+  "input": "{\"action\":\"transfer\",\"amount\":100}",
+  "program_id": "your-program-id"
+}
+EOM
+```
+
+List available drivers:
+```bash
+grpcurl -plaintext -d @- localhost:8080 units.DriverDetails/SendDetails << EOM
+{}
+EOM
+```
+
+## Understanding the Architecture
+
+UNITS employs a three-tier "burger architecture" that cleanly separates concerns across different layers of the system. The Process Layer sits at the top, handling user workflows and WebAssembly module execution. Below it, the Driver Layer manages asset abstractions and permissions. The Platform Layer forms the foundation, handling system operations and storage.
+
+This architecture enables UNITS to maintain strong isolation between different components while providing flexible integration points. Each layer communicates through well-defined interfaces, making the system both modular and extensible.
+
+## Development Workflow
+
+When developing with UNITS, you'll typically work with two main components: drivers and programs. Drivers provide the interface to underlying assets, while programs implement the business logic that operates on these assets.
+
+To create a new driver:
+
+```bash
+./scripts/create-driver.sh my-driver
+cd modules/drivers/my-driver
+```
+
+For a new program:
+
+```bash
+./scripts/create-program.sh my-program
+cd modules/programs/my-program
+```
+
+The project includes a comprehensive test script that builds the runtime, starts the server, loads test drivers, and verifies everything works correctly:
+
+```bash
+./test.sh
+```
+
+## User Interfaces
+
+UNITS provides two interface options for different use cases. The Terminal UI offers a lightweight, command-line interface perfect for development and scripting:
+
+```bash
+cd ui/units-tui
+cargo run
+```
+
+The Web UI provides a more visual, user-friendly interface:
+
+```bash
+cd ui/units-ui
+npm install
+npm start
+```
 
 ## Contributing
 
-We welcome contributions! See our [Development Guidelines](docs/DEVELOPMENT.md) for details on:
-- Creating drivers and modules
-- Requesting new capabilities
-- Development best practices
-- Pull request process
+We welcome contributions to UNITS. Start by forking the repository and creating a feature branch for your work. After making your changes, submit a pull request. See our development guidelines in [DEVELOPMENT.md](docs/DEVELOPMENT.md) for more details.
+
+## Support and Resources
+
+If you need help or want to contribute, you can open an issue, start a discussion, or browse our documentation. Join our community and help make UNITS better for everyone.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-- 📝 [Open an issue](https://github.com/NishantJoshi00/units/issues)
-- 💬 [Start a discussion](https://github.com/NishantJoshi00/units/discussions)
-- 🔍 [Browse documentation](docs/)
-
----
-
-<div align="center">
-Made with ❤️ by the UNITS Team
-</div>
+UNITS is available under the MIT License, allowing for both personal and commercial use with proper attribution.
