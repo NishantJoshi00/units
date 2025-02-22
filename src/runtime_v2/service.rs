@@ -78,23 +78,21 @@ fn check_jwt<T>(request: &Request<T>) -> Result<UserData, Box<dyn Error>> {
                 .unwrap()
                 .as_secs();
             if claims.claims.exp < current_time as usize {
-                return Ok(UserData {
+                Ok(UserData {
                     message: false,
                     user_name: None,
-                }); // Expired token
+                }) // Expired token
             } else {
-                return Ok(UserData {
+                Ok(UserData {
                     message: true,
                     user_name: Some(claims.claims.user_name.to_string()),
-                }); // Return username if valid
+                }) // Return username if valid
             }
         }
-        Err(_err) => {
-            return Ok(UserData {
-                message: false,
-                user_name: None,
-            });
-        }
+        Err(_err) => Ok(UserData {
+            message: false,
+            user_name: None,
+        }),
     }
 }
 fn get_user_id<T>(request: &Request<T>) -> Result<String, Box<dyn Error>> {
@@ -120,15 +118,13 @@ fn get_user_id<T>(request: &Request<T>) -> Result<String, Box<dyn Error>> {
                 .unwrap()
                 .as_secs();
             if claims.claims.exp < current_time as usize {
-                return Err("Invalid or expired token".to_string().into()); // Expired token
+                Err("Invalid or expired token".to_string().into()) // Expired token
             } else {
-                return Ok(claims.claims.user_id.to_string()); // Return user ID if valid
+                Ok(claims.claims.user_id.to_string()) // Return user ID if valid
             }
         }
-        Err(_err) => {
-            return Err("Invalid or expired token".to_string().into());
-        }
-    };
+        Err(_err) => Err("Invalid or expired token".to_string().into()),
+    }
 }
 
 #[tonic::async_trait]
@@ -239,7 +235,7 @@ impl server_traits::Bind for super::Runtime {
         );
 
         let path = if let Some(suffix) = request.path.strip_prefix("~/") {
-            format!("/accounts/{}/{}",user_id,suffix)
+            format!("/accounts/{}/{}", user_id, suffix)
         } else {
             request.path.clone()
         };
@@ -459,7 +455,7 @@ impl server_traits::UserLogin for super::Runtime {
                 )
                 .map_err(|_| Status::internal("Failed to create token"))?;
 
-                let cookie = format!("{}", token);
+                let cookie = token.to_string();
 
                 (cookie.to_string(), Some(cookie))
             }

@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 use std::sync::{mpsc, Arc};
 
-// use wasmtime_wasi::preview1::WasiP1Ctx;
-use wasmtime_wasi::{WasiCtx, WasiView};
-
 use super::driver::{self, DriverInfo};
 use super::platform::Platform;
 use super::resolver::PathInfo;
@@ -433,13 +430,13 @@ mod tests {
     use super::*;
     use std::marker::PhantomData;
 
-    fn check_send<T>(ty: PhantomData<T>)
+    fn check_send<T>(_: PhantomData<T>)
     where
         T: Send,
     {
     }
 
-    fn check_sync<T>(ty: PhantomData<T>)
+    fn check_sync<T>(_: PhantomData<T>)
     where
         T: Sync,
     {
@@ -450,5 +447,6 @@ mod tests {
     #[test]
     fn test_send() {
         check_sync::<DriverState>(PhantomData);
+        check_send::<DriverState>(PhantomData);
     }
 }

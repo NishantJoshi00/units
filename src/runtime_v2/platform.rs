@@ -19,7 +19,6 @@ pub struct Platform {
 
 #[derive(Clone, Debug)]
 pub struct Storage {
-    #[cfg(feature = "redis")]
     pub redis: Arc<Mutex<redis::Client>>,
     pub kev: Arc<RwLock<HashMap<String, String>>>,
 }
@@ -29,7 +28,6 @@ impl Platform {
         tracing::debug!("Initializing platform");
         Ok(Self {
             storage: Storage {
-                #[cfg(feature = "redis")]
                 redis: Arc::new(Mutex::new(redis::Client::open("redis://127.0.0.1/")?)),
                 kev: Arc::new(RwLock::new(HashMap::new())),
             },
@@ -104,7 +102,6 @@ impl Storage {
     }
 
     pub fn delete(&self, key: &str) -> anyhow::Result<()> {
-        #[cfg(feature = "redis")]
         {
             let client = self
                 .redis

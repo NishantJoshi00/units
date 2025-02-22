@@ -5,7 +5,7 @@ use std::{
 
 use tonic::async_trait;
 
-use super::{driver::DriverInfo, platform::users::User, process::Program, resolver::PathInfo};
+use super::{driver::DriverInfo, process::Program, resolver::PathInfo};
 
 #[derive(Eq, Hash, PartialEq)]
 pub struct UserInfo {
