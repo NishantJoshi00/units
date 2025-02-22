@@ -1,3 +1,4 @@
+use crate::runtime_v2::types::DriverComponent;
 use super::storage::{DriverStorage, Resolver, UserStorage};
 use super::types;
 
@@ -19,7 +20,7 @@ impl DriverRuntime {
     pub async fn init(_config: types::DriverConfig) -> anyhow::Result<Self> {
         tracing::debug!("Initializing driver runtime");
         let engine = wasmtime::Engine::new(wasmtime::Config::new().async_support(true)).unwrap();
-        let resolver = super::storage::sql::SqliteStorage::new("sqlite:units.db").await?;
+        let resolver = super::storage::sql::SqliteStorage::new("sqlite:units_zk.db").await?;
         Ok(Self {
             engine,
             drivers: Box::new(resolver.clone()),
@@ -31,7 +32,7 @@ impl DriverRuntime {
     pub async fn add_driver(
         &self,
         name: String,
-        module: wasmtime::component::Component,
+        module: DriverComponent,
         version: String,
     ) -> anyhow::Result<()> {
         let driver_info = DriverInfo { name, version };

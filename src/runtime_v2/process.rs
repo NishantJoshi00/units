@@ -21,7 +21,9 @@ impl ProcessRuntime {
         Ok(Self {
             engine,
             config,
-            programs: Box::new(super::storage::sql::SqliteStorage::new("sqlite://units.db").await?),
+            programs: Box::new(
+                super::storage::sql::SqliteStorage::new("sqlite://units_zk.db").await?,
+            ),
         })
     }
 

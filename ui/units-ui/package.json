@@ -60,6 +60,7 @@
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
+    "eslint": "^9.20.1",
     "gulp": "4.0.2",
     "gulp-append-prepend": "1.0.9"
   },

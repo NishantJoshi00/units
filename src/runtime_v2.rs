@@ -11,6 +11,7 @@ pub mod glue;
 pub mod integration;
 pub mod platform;
 pub mod process;
+pub mod provable;
 pub mod resolver;
 pub mod service;
 pub mod storage;
@@ -22,6 +23,7 @@ pub struct RuntimeConfig {
     pub driver: types::DriverConfig,
     pub platform: types::PlatformConfig,
     pub server: ServerConfig,
+    pub provable: types::ProvableConfig,
 }
 
 #[derive(Clone)]
@@ -30,6 +32,7 @@ pub struct Runtime {
     pub driver_layer: driver::DriverRuntime,
     pub platform_layer: platform::Platform,
     pub event_sender: Arc<mpsc::Sender<types::Event>>,
+    pub provable_layer: provable::ProvableRuntime,
 }
 
 impl Runtime {
@@ -43,6 +46,7 @@ impl Runtime {
             driver_layer: driver::DriverRuntime::init(config.driver).await?,
             platform_layer: platform::Platform::init(config.platform)?,
             event_sender: Arc::new(tx),
+            provable_layer: provable::ProvableRuntime::new(config.provable),
         })
     }
 

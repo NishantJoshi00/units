@@ -1,6 +1,6 @@
 use super::Runtime;
 use crate::runtime_v2::driver::DriverInfo;
-use crate::runtime_v2::types::ProcessState;
+use crate::runtime_v2::types::{DriverComponent, ProcessState, WasmComponent};
 use crate::runtime_v2::types::UserCtx;
 use crate::service::proto_types::DriverDetail;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
@@ -38,13 +38,15 @@ struct UserData {
 mod types {
     pub use crate::service::proto_types::{BindRequest, BindResponse};
     pub use crate::service::proto_types::{CheckRequest, CheckResponse};
-    pub use crate::service::proto_types::{DriverDetailsRequest, DriverDetailsResponse};
+    pub use crate::service::proto_types::{
+        DriverDetailsRequest, DriverDetailsResponse, DriverType,
+    };
     pub use crate::service::proto_types::{ExecutionRequest, ExecutionResponse};
     pub use crate::service::proto_types::{ListProgramRequest, ListProgramResponse, Program};
     pub use crate::service::proto_types::{ListResolverRequest, ListResolverResponse, PathMapping};
     pub use crate::service::proto_types::{LoadDriverRequest, LoadDriverResponse};
     pub use crate::service::proto_types::{LoginRequest, LoginResponse};
-    pub use crate::service::proto_types::{SignUpRequest, SignUpResponse};
+    pub use crate::service::proto_types::{SignUpRequest, SignUpResponse, SignUpType};
     pub use crate::service::proto_types::{SubmitProgramRequest, SubmitProgramResponse};
     pub use crate::service::proto_types::{UnbindRequest, UnbindResponse};
     pub use crate::service::proto_types::{UnloadDriverRequest, UnloadDriverResponse};
@@ -137,20 +139,30 @@ impl server_traits::Execution for super::Runtime {
         &self,
         request: Request<types::ExecutionRequest>,
     ) -> Result<Response<types::ExecutionResponse>, tonic::Status> {
+        let req = request.get_ref();
+        tracing::info!(?req, "Received execute request");
+
         let user_id = get_user_id(&request).map_err(|e| tonic::Status::internal(e.to_string()))?;
         let request = request.into_inner();
+
         let output = execte(self.clone(), request, user_id)
             .await
             .inspect_err(|err| {
                 tracing::error!(error = ?err, "Execution failed");
             })
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        tracing::info!(?output, "Execute completed successfully");
         Ok(Response::new(output))
     }
+
     async fn submit(
         &self,
         request: Request<types::SubmitProgramRequest>,
     ) -> Result<Response<types::SubmitProgramResponse>, tonic::Status> {
+        let req = request.get_ref();
+        tracing::info!(?req, "Received submit program request");
+
         let request = request.into_inner();
         let component =
             wasmtime::component::Component::new(&self.process_layer.engine, request.binary)
@@ -161,16 +173,21 @@ impl server_traits::Execution for super::Runtime {
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-        Ok(Response::new(types::SubmitProgramResponse {
-            program_id: id,
-        }))
+        let response = types::SubmitProgramResponse { program_id: id };
+        tracing::info!(?response, "Program submitted successfully");
+        Ok(Response::new(response))
     }
 
     async fn list(
         &self,
-        _request: Request<types::ListProgramRequest>,
+        request: Request<types::ListProgramRequest>,
     ) -> Result<Response<types::ListProgramResponse>, tonic::Status> {
-        Ok(Response::new(types::ListProgramResponse {
+        tracing::info!(
+            request = ?request.get_ref(),
+            "Received list programs request"
+        );
+
+        let response = Response::new(types::ListProgramResponse {
             program: self
                 .process_layer
                 .programs
@@ -184,7 +201,13 @@ impl server_traits::Execution for super::Runtime {
                     version: program.version.clone(),
                 })
                 .collect(),
-        }))
+        });
+
+        tracing::info!(
+            response = ?response.get_ref(),
+            "List programs completed"
+        );
+        Ok(response)
     }
 }
 
@@ -227,6 +250,11 @@ impl server_traits::Bind for super::Runtime {
         &self,
         request: Request<types::BindRequest>,
     ) -> Result<Response<types::BindResponse>, tonic::Status> {
+        tracing::info!(
+            request = ?request.get_ref(),
+            "Received bind request"
+        );
+
         let user_id = get_user_id(&request).map_err(|e| tonic::Status::internal(e.to_string()))?;
         let request = request.into_inner();
         let mut process_state = ProcessState::new(
@@ -239,7 +267,7 @@ impl server_traits::Bind for super::Runtime {
         );
 
         let path = if let Some(suffix) = request.path.strip_prefix("~/") {
-            format!("/accounts/{}/{}",user_id,suffix)
+            format!("/accounts/{}/{}", user_id, suffix)
         } else {
             request.path.clone()
         };
@@ -263,6 +291,10 @@ impl server_traits::Bind for super::Runtime {
             path: request.path,
         };
 
+        tracing::info!(
+            response = ?output,
+            "Bind completed successfully"
+        );
         Ok(Response::new(output))
     }
 
@@ -270,16 +302,31 @@ impl server_traits::Bind for super::Runtime {
         &self,
         request: Request<types::UnbindRequest>,
     ) -> Result<Response<types::UnbindResponse>, tonic::Status> {
+        tracing::info!(
+            request = ?request.get_ref(),
+            "Received unbind request"
+        );
+
         let request = request.into_inner();
         let output = self.driver_layer.resolver.remove(&request.path).await;
 
         match output {
-            None => Err(tonic::Status::not_found("Path not found")),
-            Some(path_info) => Ok(Response::new(types::UnbindResponse {
-                driver_name: path_info.driver_name,
-                driver_version: path_info.driver_version,
-                account_info: path_info.account_info,
-            })),
+            None => {
+                tracing::info!(
+                    path = %request.path,
+                    "Path not found for unbind"
+                );
+                Err(tonic::Status::not_found("Path not found"))
+            }
+            Some(path_info) => {
+                let response = types::UnbindResponse {
+                    driver_name: path_info.driver_name,
+                    driver_version: path_info.driver_version,
+                    account_info: path_info.account_info,
+                };
+                tracing::info!(?response, "Unbind completed successfully");
+                Ok(Response::new(response))
+            }
         }
     }
 }
@@ -290,6 +337,8 @@ impl server_traits::Driver for super::Runtime {
         &self,
         _request: Request<types::ListResolverRequest>,
     ) -> Result<Response<types::ListResolverResponse>, tonic::Status> {
+        tracing::info!("Received list_resolver request");
+
         let output =
             self.driver_layer
                 .resolver
@@ -307,23 +356,48 @@ impl server_traits::Driver for super::Runtime {
                     }
                 });
 
-        Ok(Response::new(types::ListResolverResponse {
+        let response = types::ListResolverResponse {
             path_mapping: output.collect(),
-        }))
+        };
+
+        tracing::info!(?response, "Sending list_resolver response");
+
+        Ok(Response::new(response))
     }
     async fn load_driver(
         &self,
         request: Request<types::LoadDriverRequest>,
     ) -> Result<Response<types::LoadDriverResponse>, tonic::Status> {
         let request = request.into_inner();
+        tracing::info!(name = %request.driver_name, version=%request.driver_version, "Attempting to load driver");
 
-        tracing::info!(name = %request.driver_name,version=%request.driver_version, "Adding driver");
+        let module = match request.driver_type {
+            // WASM
+            0 => {
+                let module = wasmtime::component::Component::new(
+                    &self.driver_layer.engine,
+                    request.driver_binary,
+                )
+                    .map_err(|e| {
+                        tracing::error!(error = %e, "Failed to create module for driver");
+                        tonic::Status::internal(e.to_string())
+                    })?;
+                DriverComponent::WASM(WasmComponent {
+                    module
+                })
+            },
+            // CAIRO
+            1 => {
+                self.provable_layer.declare_program(request.driver_binary, request.driver_compiled_hash).await.map_err(|e| {
+                    tracing::error!(error = %e, "Failed to deploy driver");
+                    tonic::Status::internal(e.to_string())
+                })?;
+                panic!("bla bla");
+            },
+            _ => return Err(tonic::Status::invalid_argument("Invalid driver type")),
+        };
 
-        let module =
-            wasmtime::component::Component::new(&self.driver_layer.engine, request.driver_binary)
-                .map_err(|e| tonic::Status::internal(e.to_string()))?;
-
-        tracing::info!(name = ?request.driver_name, "Module Created");
+        tracing::info!(name = ?request.driver_name, "Module created for driver");
 
         self.driver_layer
             .add_driver(
@@ -332,12 +406,19 @@ impl server_traits::Driver for super::Runtime {
                 request.driver_version.clone(),
             )
             .await
-            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+            .map_err(|e| {
+                tracing::error!(error = %e, "Failed to add driver");
+                tonic::Status::internal(e.to_string())
+            })?;
 
-        Ok(tonic::Response::new(types::LoadDriverResponse {
+        let response = types::LoadDriverResponse {
             driver_name: request.driver_name,
             driver_version: request.driver_version,
-        }))
+        };
+
+        tracing::info!(?response, "Driver loaded successfully");
+
+        Ok(tonic::Response::new(response))
     }
 
     async fn unload_driver(
@@ -345,6 +426,7 @@ impl server_traits::Driver for super::Runtime {
         request: Request<types::UnloadDriverRequest>,
     ) -> Result<Response<types::UnloadDriverResponse>, tonic::Status> {
         let request = request.into_inner();
+        tracing::info!(name = %request.driver_name, version=%request.driver_version, "Attempting to unload driver");
 
         let driver_info = DriverInfo {
             name: request.driver_name.clone(),
@@ -354,12 +436,19 @@ impl server_traits::Driver for super::Runtime {
         self.driver_layer
             .remove_driver(driver_info)
             .await
-            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+            .map_err(|e| {
+                tracing::error!(error = %e, "Failed to unload driver");
+                tonic::Status::internal(e.to_string())
+            })?;
 
-        Ok(tonic::Response::new(types::UnloadDriverResponse {
+        let response = types::UnloadDriverResponse {
             driver_name: request.driver_name,
             driver_version: request.driver_version,
-        }))
+        };
+
+        tracing::info!(?response, "Driver unloaded successfully");
+
+        Ok(tonic::Response::new(response))
     }
 }
 
@@ -369,13 +458,18 @@ impl server_traits::DriverDetails for super::Runtime {
         &self,
         _request: Request<types::DriverDetailsRequest>,
     ) -> Result<Response<types::DriverDetailsResponse>, tonic::Status> {
+        tracing::info!("Received send_details request");
+
         let mut all_driver_details = Vec::<DriverDetail>::new();
         let mut message = String::from("Drivers Detail list found!!");
         let reader = &self.driver_layer.drivers;
         for (driver_info, _module) in reader
             .list(self.driver_layer.engine.clone())
             .await
-            .map_err(|e| tonic::Status::internal(e.to_string()))?
+            .map_err(|e| {
+                tracing::error!(error = %e, "Failed to list drivers");
+                tonic::Status::internal(e.to_string())
+            })?
         {
             let new_driver = DriverDetail {
                 name: driver_info.name.clone(),
@@ -388,10 +482,14 @@ impl server_traits::DriverDetails for super::Runtime {
             message = String::from("Driver Details not found!!")
         }
 
-        Ok(tonic::Response::new(types::DriverDetailsResponse {
+        let response = types::DriverDetailsResponse {
             message,
             driver_data: all_driver_details,
-        }))
+        };
+
+        tracing::info!(?response, "Sending driver details response");
+
+        Ok(tonic::Response::new(response))
     }
 }
 
@@ -402,16 +500,50 @@ impl server_traits::UserSignUp for super::Runtime {
         request: Request<types::SignUpRequest>,
     ) -> Result<Response<types::SignUpResponse>, tonic::Status> {
         let request = request.into_inner();
-        let mut hasher = blake3::Hasher::new();
-        hasher.update(request.password.as_bytes());
-        let hash_pass = hasher.finalize();
+        tracing::info!(user_name = %request.user_name, "Attempting to sign up user");
+
+        let mut hash_pass = String::new();
+        let mut account_address = None;
+        match request.sign_up_type {
+            0 => {
+                // Password
+                let mut hasher = blake3::Hasher::new();
+                hasher.update(request.password.as_bytes());
+                hash_pass = hasher.finalize().to_string();
+            }
+            1 => {
+                // PublicKey
+                // password is public key in this case
+                hash_pass = request.password;
+                let address = self
+                    .provable_layer
+                    .deploy_account(hash_pass.clone(), request.account_program_hash)
+                    .await
+                    .map_err(|e| {
+                        tracing::error!(error = %e, "Failed to deploy account");
+                        tonic::Status::internal(e.to_string())
+                    })?;
+                account_address = Some(address);
+            }
+            _ => return Err(tonic::Status::invalid_argument("Invalid signup type")),
+        }
 
         self.driver_layer
             .user
-            .insert(&request.user_name, &hash_pass.to_string())
+            .insert(
+                &request.user_name,
+                &hash_pass.to_string(),
+                account_address.as_deref(),
+            )
             .await
-            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+            .map_err(|e| {
+                tracing::error!(error = %e, "Failed to sign up user");
+                tonic::Status::internal(e.to_string())
+            })?;
         let message = format!("{} has signed up successfully", request.user_name);
+
+        tracing::info!(message = %message, "User signed up successfully");
+
         Ok(tonic::Response::new(types::SignUpResponse { message }))
     }
 }
@@ -422,6 +554,11 @@ impl server_traits::UserLogin for super::Runtime {
         &self,
         request: Request<types::LoginRequest>,
     ) -> Result<Response<types::LoginResponse>, tonic::Status> {
+        tracing::info!(
+            request = ?request.get_ref(),
+            "Received login request"
+        );
+
         let request = request.into_inner();
         let mut hasher = blake3::Hasher::new();
         hasher.update(request.password.as_bytes());
@@ -466,7 +603,9 @@ impl server_traits::UserLogin for super::Runtime {
             Err(_) => (String::from("Error retrieving user"), None),
         };
 
-        let mut response = Response::new(types::LoginResponse { jwt_token });
+        let mut response = Response::new(types::LoginResponse {
+            jwt_token: jwt_token.clone(),
+        });
 
         if let Some(cookie_value) = set_cookie {
             response.metadata_mut().insert(
@@ -476,6 +615,11 @@ impl server_traits::UserLogin for super::Runtime {
             );
         }
 
+        tracing::info!(
+            response = ?response.get_ref(),
+            success = %(jwt_token != "User not found" && jwt_token != "Error retrieving user"),
+            "Login attempt completed"
+        );
         Ok(response)
     }
 }
@@ -486,16 +630,24 @@ impl server_traits::UserCheck for super::Runtime {
         &self,
         request: Request<types::CheckRequest>,
     ) -> Result<Response<types::CheckResponse>, tonic::Status> {
+        tracing::info!(
+            request = ?request.get_ref(),
+            "Received user check request"
+        );
+
         let user_data = check_jwt(&request).map_err(|e| tonic::Status::internal(e.to_string()))?;
-        match user_data.user_name {
-            Some(user_name) => Ok(tonic::Response::new(types::CheckResponse {
+        let response = match user_data.user_name {
+            Some(user_name) => types::CheckResponse {
                 message: user_data.message,
                 user_name: user_name.to_string(),
-            })),
-            None => Ok(tonic::Response::new(types::CheckResponse {
+            },
+            None => types::CheckResponse {
                 message: user_data.message,
                 user_name: String::from(""),
-            })),
-        }
+            },
+        };
+
+        tracing::info!(?response, "User check completed");
+        Ok(Response::new(response))
     }
 }

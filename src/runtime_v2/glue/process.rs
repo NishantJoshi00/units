@@ -1,7 +1,9 @@
+use anyhow::anyhow;
 use crate::runtime_v2::driver::DriverInfo;
 use crate::runtime_v2::types;
 use crate::runtime_v2::types::component::module::component::units;
 use crate::runtime_v2::types::component::module::component::units::driver::DriverError;
+use crate::runtime_v2::types::DriverComponent;
 
 impl units::driver::Host for types::ProcessState {
     async fn intend(&mut self, input: String) -> Result<String, DriverError> {
@@ -28,6 +30,12 @@ impl units::driver::Host for types::ProcessState {
         let driver = self
             .get_driver(&driver_info, self.driver_runtime.engine.clone())
             .await?;
+        
+        let driver = match driver {
+            DriverComponent::WASM(driver) => driver.module,
+            _ => unreachable!("WASM component shouldn't be able to contact a component of different type")
+        };
+        
         let (mut linker, mut state) = self.get_lower_runtime(driver_info)?;
         wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|err| {
             types::component::module::component::units::driver::DriverError::SystemError(
@@ -103,6 +111,12 @@ impl units::driver::Host for types::ProcessState {
                 err.to_string(),
             )
         })?;
+        
+        let driver = match driver {
+            DriverComponent::WASM(driver) => driver.module,
+            _ => unreachable!("WASM component shouldn't be able to contact a component of different type")
+        };
+        
         let instance =
             types::component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker)
                 .await
@@ -171,6 +185,12 @@ impl units::driver::Host for types::ProcessState {
                 err.to_string(),
             )
         })?;
+
+        let driver = match driver {
+            DriverComponent::WASM(driver) => driver.module,
+            _ => unreachable!("WASM component shouldn't be able to contact a component of different type")
+        };
+        
         let instance =
             types::component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker)
                 .await
@@ -218,6 +238,12 @@ impl units::driver::Host for types::ProcessState {
                 err.to_string(),
             )
         })?;
+
+        let driver = match driver {
+            DriverComponent::WASM(driver) => driver.module,
+            _ => unreachable!("WASM component shouldn't be able to contact a component of different type")
+        };
+        
         let instance =
             types::component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker)
                 .await

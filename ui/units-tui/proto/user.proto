@@ -6,12 +6,18 @@ service UserSignUp {
   rpc SignUp(SignUpRequest) returns (SignUpResponse);
 }
 
+enum SignUpType {
+  PASSWORD = 0;
+  PUBLIC_KEY = 1;
+}
+
 message SignUpRequest {
   string user_name = 1;
-  string name =2;
+  string name = 2;
   string email = 3;
-  string password = 4;
-
+  SignUpType signup_type = 4;
+  string password = 5;
+  string public_key = 6;
 }
 
 message SignUpResponse{

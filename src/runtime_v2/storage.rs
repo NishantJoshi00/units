@@ -4,6 +4,7 @@ use std::{
 };
 
 use tonic::async_trait;
+use crate::runtime_v2::types::DriverComponent;
 
 use super::{driver::DriverInfo, platform::users::User, process::Program, resolver::PathInfo};
 
@@ -11,13 +12,14 @@ use super::{driver::DriverInfo, platform::users::User, process::Program, resolve
 pub struct UserInfo {
     pub username: String,
     pub password: String,
+    pub account_address: Option<String>,
 }
 
 #[derive(Clone, Default)]
 pub struct PersistentStorage {
     mount_points: Arc<RwLock<HashMap<String, PathInfo>>>,
     pub programs: Arc<RwLock<HashMap<String, Program>>>,
-    pub drivers: Arc<RwLock<HashMap<DriverInfo, wasmtime::component::Component>>>,
+    pub drivers: Arc<RwLock<HashMap<DriverInfo, DriverComponent>>>,
     pub user: Arc<RwLock<HashMap<UserInfo, String>>>,
 }
 
@@ -51,23 +53,23 @@ pub trait DriverStorage: dyn_clone::DynClone + private::Safety {
     async fn insert(
         &self,
         driver_info: DriverInfo,
-        module: wasmtime::component::Component,
+        module: DriverComponent,
     ) -> anyhow::Result<()>;
     async fn get(
         &self,
         driver_info: &DriverInfo,
         engine: wasmtime::Engine,
-    ) -> Result<Option<wasmtime::component::Component>, anyhow::Error>;
+    ) -> Result<Option<DriverComponent>, anyhow::Error>;
     async fn list(
         &self,
         engine: wasmtime::Engine,
-    ) -> Result<Vec<(DriverInfo, wasmtime::component::Component)>, anyhow::Error>;
+    ) -> Result<Vec<(DriverInfo, DriverComponent)>, anyhow::Error>;
     async fn remove(&self, driver_info: &DriverInfo) -> anyhow::Result<()>;
 }
 
 #[async_trait]
 pub trait UserStorage: dyn_clone::DynClone + private::Safety {
-    async fn insert(&self, username: &str, password: &str) -> anyhow::Result<String>;
+    async fn insert(&self, username: &str, password: &str, account_address: Option<&str>) -> anyhow::Result<String>;
     async fn get(&self, username: &str, password: &str) -> anyhow::Result<Option<String>>;
 }
 
@@ -136,7 +138,7 @@ impl DriverStorage for PersistentStorage {
     async fn insert(
         &self,
         driver_info: DriverInfo,
-        module: wasmtime::component::Component,
+        module: DriverComponent,
     ) -> anyhow::Result<()> {
         self.drivers
             .write()
@@ -148,7 +150,7 @@ impl DriverStorage for PersistentStorage {
         &self,
         driver_info: &DriverInfo,
         _engine: wasmtime::Engine,
-    ) -> Result<Option<wasmtime::component::Component>, anyhow::Error> {
+    ) -> Result<Option<DriverComponent>, anyhow::Error> {
         Ok(self
             .drivers
             .read()
@@ -160,7 +162,7 @@ impl DriverStorage for PersistentStorage {
     async fn list(
         &self,
         _engine: wasmtime::Engine,
-    ) -> Result<Vec<(DriverInfo, wasmtime::component::Component)>, anyhow::Error> {
+    ) -> Result<Vec<(DriverInfo, DriverComponent)>, anyhow::Error> {
         Ok(self
             .drivers
             .read()
@@ -181,10 +183,11 @@ impl DriverStorage for PersistentStorage {
 
 #[async_trait]
 impl UserStorage for PersistentStorage {
-    async fn insert(&self, username: &str, password: &str) -> anyhow::Result<String> {
+    async fn insert(&self, username: &str, password: &str, account_address: Option<&str>) -> anyhow::Result<String> {
         let user_info = UserInfo {
             username: username.to_string(),
             password: password.to_string(),
+            account_address: account_address.map(|s| s.to_string()),
         };
         let user_id = username.to_string();
         self.user
@@ -197,6 +200,7 @@ impl UserStorage for PersistentStorage {
         let user_info = UserInfo {
             username: username.to_string(),
             password: password.to_string(),
+            account_address: None,
         };
         let user_map = self
             .user

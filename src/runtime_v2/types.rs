@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 use std::sync::{mpsc, Arc};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::ser::SerializeMap;
+use wasmtime::component::Component;
 
 // use wasmtime_wasi::preview1::WasiP1Ctx;
 use wasmtime_wasi::{WasiCtx, WasiView};
@@ -48,6 +51,14 @@ pub struct RuntimeConfig {
 pub struct DriverConfig {
     pub driver_limit: u32,
     pub driver_timeout: u32, // in seconds
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct ProvableConfig {
+    pub url: String,
+    pub operator_private_key: String,
+    pub operator_address: String,
+    pub chain_id: String,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -163,7 +174,7 @@ impl ProcessState {
         input: &DriverInfo,
         engine: wasmtime::Engine,
     ) -> Result<
-        wasmtime::component::Component,
+        DriverComponent,
         component::module::component::units::driver::DriverError,
     > {
         let driver = self
@@ -284,6 +295,12 @@ impl ProcessState {
                         err.to_string(),
                     )
                 })?;
+
+                let driver = match driver {
+                    DriverComponent::WASM(driver) => driver.module,
+                    _ => unreachable!("WASM component shouldn't be able to contact a component of different type")
+                };
+                
                 let instance =
                     component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker)
                         .await
@@ -338,6 +355,12 @@ impl ProcessState {
                         err.to_string(),
                     )
                 })?;
+
+                let driver = match driver {
+                    DriverComponent::WASM(driver) => driver.module,
+                    _ => unreachable!("WASM component shouldn't be able to contact a component of different type")
+                };
+                
                 let instance =
                     component::driver::DriverWorld::instantiate_async(&mut state, &driver, &linker)
                         .await
@@ -426,6 +449,66 @@ impl wasmtime_wasi::WasiView for ProcessState {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub enum DriverComponent {
+    WASM(WasmComponent),
+    Cairo(CairoComponent)
+}
+
+#[derive(Clone)]
+pub struct WasmComponent {
+    pub module: Component
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct CairoComponent {
+    pub program_address: String
+}
+impl Serialize for WasmComponent {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        let mut map = serializer.serialize_map(None)?;
+        // TODO: handle unwrap
+        map.serialize_entry("module", self.module.serialize().unwrap().as_slice());
+        map.end()
+    }
+}
+
+
+// TODO: need to test this
+impl<'de> Deserialize<'de> for WasmComponent {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        struct Visitor;
+
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = WasmComponent;
+
+            fn expecting(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                write!(f, "the parameters for `WasmComponent`")
+            }
+
+            #[allow(unused_mut)]
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+                where
+                    A: serde::de::SeqAccess<'de>,
+            {
+                // TODO: figure out a way to pass this form runtime
+                let engine = wasmtime::Engine::new(wasmtime::Config::new().async_support(true)).unwrap();;
+                let module: Component = unsafe {
+                    Component::deserialize(&engine, seq.next_element::<Vec<u8>>()?.ok_or_else(|| serde::de::Error::invalid_length(1, &"expected 1 parameters"))?).unwrap()
+                };
+
+                if seq.next_element::<serde::de::IgnoredAny>()?.is_some() {
+                    return Err(serde::de::Error::invalid_length(2, &"expected 1 parameters"));
+                }
+
+                Ok(WasmComponent {module})
+            }
+        }
+
+        deserializer.deserialize_any(Visitor)
+    }
 }
 
 #[cfg(test)]

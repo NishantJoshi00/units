@@ -27,10 +27,19 @@ message PathMapping {
     string account_info = 4;
 }
 
+enum DriverType {
+  WASM = 0;
+  CAIRO = 1;
+}
+
 message LoadDriverRequest {
   string driver_name = 1;
   string driver_version = 2;
+  DriverType driver_type = 3;
   bytes driver_binary = 4;
+  // TODO: maybe have different structs for each driver_type inside
+  // LoadDriverRequest
+  string driver_compiled_hash = 5;
 }
 
 message LoadDriverResponse {

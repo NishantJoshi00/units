@@ -1246,7 +1246,7 @@ nied\x01s\0\x0csystem-error\x01s\0\x0dinvalid-input\x01s\0\x0dunknown-error\x01s
 \x01\x03\x01ks\x01@\x02\x05inputs\x08existing\x07\0\x02\x04\0\x04bind\x01\x08\x04\
 \0\x16component:units/driver\x05\x02\x04\0\x1ccomponent:units/driver-world\x04\0\
 \x0b\x12\x01\0\x0cdriver-world\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0d\
-wit-component\x070.220.0\x10wit-bindgen-rust\x060.36.0";
+wit-component\x070.220.1\x10wit-bindgen-rust\x060.36.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {

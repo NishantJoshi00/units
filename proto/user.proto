@@ -11,7 +11,13 @@ message SignUpRequest {
   string name =2;
   string email = 3;
   string password = 4;
+  SignUpType sign_up_type = 5;
+  string account_program_hash = 6;
+}
 
+enum SignUpType {
+  PASSWORD = 0;
+  PUBLIC_KEY = 1;
 }
 
 message SignUpResponse{

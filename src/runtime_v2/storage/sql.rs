@@ -1,9 +1,10 @@
 use super::{DriverInfo, DriverStorage, PathInfo, Program, ProgramStorage, Resolver, UserStorage};
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use serde::{de::DeserializeOwned, Serialize};
 use sqlx::SqlitePool;
 use tonic::async_trait;
 use wasmtime::component::Component;
+use crate::runtime_v2::types::DriverComponent;
 
 #[derive(Clone)]
 pub struct SqliteStorage {
@@ -149,8 +150,8 @@ impl ProgramStorage for SqliteStorage {
 
 #[async_trait]
 impl DriverStorage for SqliteStorage {
-    async fn insert(&self, driver_info: DriverInfo, module: Component) -> Result<()> {
-        let component_bytes = Self::serialize_component(&module).await?;
+    async fn insert(&self, driver_info: DriverInfo, module: DriverComponent) -> Result<()> {
+        let component_bytes = serde_json::to_vec(&module).context("Failed to serialize driver component")?;
 
         sqlx::query!(
             "INSERT OR REPLACE INTO Driver (name, version, component) VALUES (?, ?, ?)",
@@ -169,7 +170,7 @@ impl DriverStorage for SqliteStorage {
         &self,
         driver_info: &DriverInfo,
         engine: wasmtime::Engine,
-    ) -> Result<Option<Component>> {
+    ) -> Result<Option<DriverComponent>> {
         let result = sqlx::query!(
             "SELECT component FROM Driver WHERE name = ? AND version = ?",
             driver_info.name,
@@ -178,12 +179,14 @@ impl DriverStorage for SqliteStorage {
         .fetch_optional(&self.pool)
         .await?;
 
+        
         result
-            .map(|row| Self::deserialize_component(&row.component, &engine))
+            .map(|row| serde_json::from_slice::<DriverComponent>(&row.component)
+                .map_err(|e| anyhow!("Failed to deserialize driver component {}", e)))
             .transpose()
     }
 
-    async fn list(&self, engine: wasmtime::Engine) -> Result<Vec<(DriverInfo, Component)>> {
+    async fn list(&self, engine: wasmtime::Engine) -> Result<Vec<(DriverInfo, DriverComponent)>> {
         let rows = sqlx::query!("SELECT name, version, component FROM Driver")
             .fetch_all(&self.pool)
             .await?;
@@ -194,7 +197,7 @@ impl DriverStorage for SqliteStorage {
                 name: row.name,
                 version: row.version,
             };
-            let component = Self::deserialize_component(&row.component, &engine)?;
+            let component = serde_json::from_slice::<DriverComponent>(&row.component)?;
             drivers.push((driver_info, component));
         }
 
@@ -217,17 +220,26 @@ impl DriverStorage for SqliteStorage {
 
 #[async_trait]
 impl UserStorage for SqliteStorage {
-    async fn insert(&self, username: &str, password: &str) -> Result<String> {
+    async fn insert(
+        &self,
+        username: &str,
+        password: &str,
+        account_address: Option<&str>,
+    ) -> Result<String> {
         let userid = username;
         sqlx::query!(
-            "INSERT INTO User (user_name, user_id, password) VALUES (?, ?, ?)",
+            "INSERT INTO User (user_name, user_id, password, account_address) VALUES (?, ?, ?, ?)",
             username,
             userid,
-            password
+            password,
+            account_address
         )
         .execute(&self.pool)
         .await
-        .context("Failed to insert User")?;
+        .map_err(|e| {
+            println!("Error: {:?}", e);
+            anyhow::anyhow!("Failed to insert User")
+        })?;
 
         Ok(userid.to_string())
     }

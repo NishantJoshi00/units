@@ -25,5 +25,6 @@ CREATE TABLE IF NOT EXISTS Driver (
 CREATE TABLE IF NOT EXISTS User (
     user_name TEXT NOT NULL,
     user_id TEXT NOT NULL PRIMARY KEY,
-    password TEXT NOT NULL
+    password TEXT NOT NULL,
+    account_address TEXT
 );
