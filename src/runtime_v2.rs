@@ -3,6 +3,8 @@ use std::sync::mpsc;
 use std::sync::Arc;
 
 use anyhow::ensure;
+use smol::process::driver;
+use crate::runtime_v2::types::{CairoInput, ProgramComponent};
 
 use self::types::ServerConfig;
 
@@ -53,47 +55,69 @@ impl Runtime {
     pub async fn exec(
         self,
         ctx: types::UserCtx,
-        module: wasmtime::component::Component,
+        module: ProgramComponent,
         input: String,
     ) -> anyhow::Result<String> {
-        let mut state = wasmtime::Store::new(
-            &self.process_layer.engine,
-            types::ProcessState::new(
-                ctx,
-                self.driver_layer,
-                self.platform_layer,
-                self.event_sender,
-                self.provable_layer
-            ),
-        );
+        let output = match module { 
+            ProgramComponent::WASM(program) => {
+                let mut state = wasmtime::Store::new(
+                    &self.process_layer.engine,
+                    types::ProcessState::new(
+                        ctx,
+                        self.driver_layer,
+                        self.platform_layer,
+                        self.event_sender,
+                        self.provable_layer
+                    ),
+                );
+                let mut linker = wasmtime::component::Linker::new(&self.process_layer.engine);
 
-        let mut linker = wasmtime::component::Linker::new(&self.process_layer.engine);
+                types::component::module::ModuleWorld::add_to_linker(
+                    &mut linker,
+                    |state: &mut types::ProcessState| state,
+                )?;
 
-        types::component::module::ModuleWorld::add_to_linker(
-            &mut linker,
-            |state: &mut types::ProcessState| state,
-        )?;
+                wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|err| {
+                    types::component::module::component::units::driver::DriverError::SystemError(
+                        err.to_string(),
+                    )
+                })?;
+                let instance =
+                    types::component::module::ModuleWorld::instantiate_async(&mut state, &program.module, &linker)
+                        .await?;
 
-        wasmtime_wasi::add_to_linker_async(&mut linker).map_err(|err| {
-            types::component::module::component::units::driver::DriverError::SystemError(
-                err.to_string(),
-            )
-        })?;
-        let instance =
-            types::component::module::ModuleWorld::instantiate_async(&mut state, &module, &linker)
-                .await?;
+                tracing::info!(runtime = "process", input = %input, "executing module");
 
-        tracing::info!(runtime = "process", input = %input, "executing module");
-
-        let result = instance.call_main(state, &input).await?;
-
-        match result {
-            Ok(output) => Ok(output),
-            Err(e) => {
-                tracing::error!(?e, "Error while executing module");
-                anyhow::bail!("Error while executing module")
+                let result = instance.call_main(state, &input).await?;
+                match result {
+                    Ok(output) => output,
+                    Err(e) => {
+                        tracing::error!(?e, "Error while executing module");
+                        anyhow::bail!("Error while executing module")
+                    }
+                }
             }
-        }
+            ProgramComponent::Cairo(program) => {
+                let cairo_input: CairoInput = serde_json::from_str(input.as_str()).unwrap();
+
+                let program_input = cairo_input.program_input;
+                let program_input_w_driver_details = format!(
+                    "0x1,{},{}",
+                    program.program_address,
+                    program_input
+                );
+
+                self.provable_layer
+                    .execute_program(
+                        ctx.user_id,
+                        program_input_w_driver_details,
+                        cairo_input.user_signature,
+                    )
+                    .await?
+            }
+        };
+        
+        Ok(output)
     }
 }
 

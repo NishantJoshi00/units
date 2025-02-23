@@ -12,6 +12,7 @@ use starknet::{
 use starknet::accounts::{Account, ConnectedAccount};
 use starknet::core::types::{BlockTag, BroadcastedInvokeTransactionV3, ResourceBoundsMapping, ResourceBounds, DataAvailabilityMode, BroadcastedInvokeTransaction};
 use starknet::core::types::contract::SierraClassDebugInfo;
+use rand::random;
 
 use super::types::ProvableConfig;
 #[derive(Debug, Clone)]
@@ -111,13 +112,15 @@ impl ProvableRuntime {
             Felt::from_hex_unchecked(&class_hash),
             self.get_operator_account(),
         );
+
+        let salt: u128 = random();
         let deployment = contract_factory.deploy_v3(
             constructor_calldata
                 .into_iter()
                 .map(|s| Felt::from_hex_unchecked(s.as_str()))
                 .collect(),
             // TODO: should this be random?
-            Felt::ONE,
+            salt.into(),
             true,
         );
         let address = deployment.deployed_address();
@@ -133,7 +136,7 @@ impl ProvableRuntime {
             .transaction_hash;
         tracing::info!(
             "Contract deployment successful, txn hash: {}",
-            transaction_hash
+            transaction_hash.to_hex_string()
         );
         Ok(address.to_hex_string())
     }
@@ -163,6 +166,8 @@ impl ProvableRuntime {
             fee_data_availability_mode: DataAvailabilityMode::L1,
             is_query: false
         };
+
+        println!("this is txn input {:?}", txn_input);
 
         let invoke_result = self.provider.add_invoke_transaction(BroadcastedInvokeTransaction::V3(txn_input)).await?;
 

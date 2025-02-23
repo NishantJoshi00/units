@@ -140,7 +140,7 @@ pub struct DriverState {
 }
 
 #[derive(Deserialize)]
-struct CairoInput {
+pub struct CairoInput {
     pub program_input: String,
     pub user_signature: String,
 }
@@ -340,9 +340,8 @@ impl ProcessState {
 
                         let program_input = cairo_input.program_input;
                         let program_input_w_driver_details = format!(
-                            "0x1,{},{},{}",
+                            "0x1,{},{}",
                             driver.program_address,
-                            selector!("bind"),
                             program_input
                         );
 

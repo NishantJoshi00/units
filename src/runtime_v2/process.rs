@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+use crate::runtime_v2::types::ProgramComponent;
 use super::{storage::ProgramStorage, types};
 
 #[derive(Clone)]
@@ -9,7 +11,7 @@ pub struct ProcessRuntime {
 
 #[derive(Clone)]
 pub struct Program {
-    pub component: wasmtime::component::Component,
+    pub component: ProgramComponent,
     pub name: String,
     pub version: String,
 }
@@ -31,7 +33,7 @@ impl ProcessRuntime {
         &self,
         name: String,
         version: String,
-        component: wasmtime::component::Component,
+        component: ProgramComponent,
     ) -> anyhow::Result<String> {
         let program = Program {
             name,

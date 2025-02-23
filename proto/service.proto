@@ -71,7 +71,6 @@ message BindRequest {
   string driver_version = 2;
   string path = 3;
   string account_info = 4;
-  optional string signature = 5;
 }
 
 message BindResponse {
@@ -108,6 +107,10 @@ message SubmitProgramRequest {
   string name = 1;
   string version = 2;
   bytes binary = 5;
+  ProgramType program_type = 6;
+  repeated string program_constructor_data = 7;
+  // TODO: maybe have different structs for each driver_type inside SubmitProgramRequest
+  string program_compiled_hash = 8;
 }
 
 message ListProgramRequest {

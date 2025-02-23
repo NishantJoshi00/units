@@ -39,14 +39,14 @@ mod types {
     pub use crate::service::proto_types::{BindRequest, BindResponse};
     pub use crate::service::proto_types::{CheckRequest, CheckResponse};
     pub use crate::service::proto_types::{
-        DriverDetailsRequest, DriverDetailsResponse, ProgramType,
+        DriverDetailsRequest, DriverDetailsResponse,
     };
     pub use crate::service::proto_types::{ExecutionRequest, ExecutionResponse};
     pub use crate::service::proto_types::{ListProgramRequest, ListProgramResponse, Program};
     pub use crate::service::proto_types::{ListResolverRequest, ListResolverResponse, PathMapping};
     pub use crate::service::proto_types::{LoadDriverRequest, LoadDriverResponse};
     pub use crate::service::proto_types::{LoginRequest, LoginResponse};
-    pub use crate::service::proto_types::{SignUpRequest, SignUpResponse, SignUpType};
+    pub use crate::service::proto_types::{SignUpRequest, SignUpResponse};
     pub use crate::service::proto_types::{SubmitProgramRequest, SubmitProgramResponse};
     pub use crate::service::proto_types::{UnbindRequest, UnbindResponse};
     pub use crate::service::proto_types::{UnloadDriverRequest, UnloadDriverResponse};
@@ -171,9 +171,26 @@ impl server_traits::Execution for super::Runtime {
         tracing::info!(?req, "Received submit program request");
 
         let request = request.into_inner();
-        let component =
-            wasmtime::component::Component::new(&self.process_layer.engine, request.binary)
-                .map_err(|e| tonic::Status::internal(e.to_string()))?;
+        let component = match request.program_type {
+            // WASM
+            0 => {
+                ProgramComponent::WASM(WasmComponent {
+                    module:wasmtime::component::Component::new(&self.process_layer.engine, request.binary)
+                        .map_err(|e| tonic::Status::internal(e.to_string()))?
+                })
+            },
+            // CAIRO
+            1 => {
+                let program_address = self.provable_layer.declare_and_deploy_program(request.binary, request.program_compiled_hash, request.program_constructor_data).await.map_err(|e| {
+                    tracing::error!(error = %e, "Failed to deploy program");
+                    tonic::Status::internal(e.to_string())
+                })?;
+                ProgramComponent::Cairo(CairoComponent {
+                    program_address
+                })
+            },
+            _ => return Err(tonic::Status::invalid_argument("Invalid program type")),
+        };
         let id = self
             .process_layer
             .store_program(request.name, request.version, component)
@@ -231,7 +248,9 @@ async fn execte(
             .map(|prog| prog.component)
             .ok_or_else(|| anyhow::anyhow!("Program not found"))?,
         (None, Some(binary)) => {
-            wasmtime::component::Component::new(&runtime.process_layer.engine, binary)?
+            ProgramComponent::WASM(WasmComponent {
+                module: wasmtime::component::Component::new(&runtime.process_layer.engine, binary)?
+            })
         }
         _ => {
             anyhow::bail!("Either program_id or binary should be provided (but not both)")

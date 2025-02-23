@@ -94,7 +94,7 @@ impl Resolver for SqliteStorage {
 #[async_trait]
 impl ProgramStorage for SqliteStorage {
     async fn insert(&self, id: &str, program: Program) -> Result<()> {
-        let component_bytes = Self::serialize_component(&program.component).await?;
+        let component_bytes = serde_json::to_vec(&program.component).context("Failed to serialize driver component")?;
 
         sqlx::query!(
             "INSERT OR REPLACE INTO Program (id, name, version, component) VALUES (?, ?, ?, ?)",
@@ -121,7 +121,8 @@ impl ProgramStorage for SqliteStorage {
         result
             .map(|row| {
                 Ok(Program {
-                    component: Self::deserialize_component(&row.component, &engine)?,
+                    component: serde_json::from_slice::<ProgramComponent>(&row.component)
+                        .map_err(|e| anyhow!("Failed to deserialize driver component {}", e))?,
                     name: row.name,
                     version: row.version,
                 })
@@ -137,7 +138,8 @@ impl ProgramStorage for SqliteStorage {
         let mut programs = Vec::with_capacity(rows.len());
         for row in rows {
             let program = Program {
-                component: Self::deserialize_component(&row.component, &engine)?,
+                component: serde_json::from_slice::<ProgramComponent>(&row.component)
+                    .map_err(|e| anyhow!("Failed to deserialize driver component {}", e))?,
                 name: row.name,
                 version: row.version,
             };
