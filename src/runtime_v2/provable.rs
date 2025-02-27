@@ -103,6 +103,7 @@ impl ProvableRuntime {
                 Arc::new(flattened_program),
                 Felt::from_hex_unchecked(&compiled_class_hash),
             )
+            .gas_price(0)
             .send()
             .await
             .unwrap();
