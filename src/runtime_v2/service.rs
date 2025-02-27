@@ -586,7 +586,10 @@ impl server_traits::UserSignUp for super::Runtime {
 
         tracing::info!(message = %message, "User signed up successfully");
 
-        Ok(tonic::Response::new(types::SignUpResponse { message }))
+        Ok(tonic::Response::new(types::SignUpResponse {
+            message,
+            address: account_address,
+        }))
     }
 }
 

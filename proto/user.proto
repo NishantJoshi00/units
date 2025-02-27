@@ -22,6 +22,7 @@ enum SignUpType {
 
 message SignUpResponse{
     string message = 1;
+    optional string address = 2;
 }
 
 service UserLogin {
