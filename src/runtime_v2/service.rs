@@ -1,7 +1,7 @@
 use super::Runtime;
 use crate::runtime_v2::driver::DriverInfo;
-use crate::runtime_v2::types::{CairoComponent, ProgramComponent, ProcessState, WasmComponent};
 use crate::runtime_v2::types::UserCtx;
+use crate::runtime_v2::types::{CairoComponent, ProcessState, ProgramComponent, WasmComponent};
 use crate::service::proto_types::DriverDetail;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
@@ -38,9 +38,7 @@ struct UserData {
 mod types {
     pub use crate::service::proto_types::{BindRequest, BindResponse};
     pub use crate::service::proto_types::{CheckRequest, CheckResponse};
-    pub use crate::service::proto_types::{
-        DriverDetailsRequest, DriverDetailsResponse,
-    };
+    pub use crate::service::proto_types::{DriverDetailsRequest, DriverDetailsResponse};
     pub use crate::service::proto_types::{ExecutionRequest, ExecutionResponse};
     pub use crate::service::proto_types::{ListProgramRequest, ListProgramResponse, Program};
     pub use crate::service::proto_types::{ListResolverRequest, ListResolverResponse, PathMapping};
@@ -100,13 +98,12 @@ fn check_jwt<T>(request: &Request<T>) -> Result<UserData, Box<dyn Error>> {
     }
 }
 fn get_user_id<T>(request: &Request<T>) -> Result<String, Box<dyn Error>> {
-    
     // hacky implementation to fetch account address from headers
     // the address is being stored in the User table, eventually we can
     // fetch the user address from there
     if let Some(address) = request.metadata().get("CairoAccountAddress") {
-        return Ok(address.to_str()?.to_string())
-    } 
+        return Ok(address.to_str()?.to_string());
+    }
     let token = match request.metadata().get("Authorization") {
         Some(token) => token
             .to_str()
@@ -173,22 +170,29 @@ impl server_traits::Execution for super::Runtime {
         let request = request.into_inner();
         let component = match request.program_type {
             // WASM
-            0 => {
-                ProgramComponent::WASM(WasmComponent {
-                    module:wasmtime::component::Component::new(&self.process_layer.engine, request.binary)
-                        .map_err(|e| tonic::Status::internal(e.to_string()))?
-                })
-            },
+            0 => ProgramComponent::WASM(WasmComponent {
+                module: wasmtime::component::Component::new(
+                    &self.process_layer.engine,
+                    request.binary,
+                )
+                .map_err(|e| tonic::Status::internal(e.to_string()))?,
+            }),
             // CAIRO
             1 => {
-                let program_address = self.provable_layer.declare_and_deploy_program(request.binary, request.program_compiled_hash, request.program_constructor_data).await.map_err(|e| {
-                    tracing::error!(error = %e, "Failed to deploy program");
-                    tonic::Status::internal(e.to_string())
-                })?;
-                ProgramComponent::Cairo(CairoComponent {
-                    program_address
-                })
-            },
+                let program_address = self
+                    .provable_layer
+                    .declare_and_deploy_program(
+                        request.binary,
+                        request.program_compiled_hash,
+                        request.program_constructor_data,
+                    )
+                    .await
+                    .map_err(|e| {
+                        tracing::error!(error = %e, "Failed to deploy program");
+                        tonic::Status::internal(e.to_string())
+                    })?;
+                ProgramComponent::Cairo(CairoComponent { program_address })
+            }
             _ => return Err(tonic::Status::invalid_argument("Invalid program type")),
         };
         let id = self
@@ -247,11 +251,9 @@ async fn execte(
             .await?
             .map(|prog| prog.component)
             .ok_or_else(|| anyhow::anyhow!("Program not found"))?,
-        (None, Some(binary)) => {
-            ProgramComponent::WASM(WasmComponent {
-                module: wasmtime::component::Component::new(&runtime.process_layer.engine, binary)?
-            })
-        }
+        (None, Some(binary)) => ProgramComponent::WASM(WasmComponent {
+            module: wasmtime::component::Component::new(&runtime.process_layer.engine, binary)?,
+        }),
         _ => {
             anyhow::bail!("Either program_id or binary should be provided (but not both)")
         }
@@ -290,7 +292,7 @@ impl server_traits::Bind for super::Runtime {
             self.driver_layer.clone(),
             self.platform_layer.clone(),
             self.event_sender.clone(),
-            self.provable_layer.clone()
+            self.provable_layer.clone(),
         );
 
         let path = if let Some(suffix) = request.path.strip_prefix("~/") {
@@ -405,24 +407,28 @@ impl server_traits::Driver for super::Runtime {
                     &self.driver_layer.engine,
                     request.driver_binary,
                 )
-                    .map_err(|e| {
-                        tracing::error!(error = %e, "Failed to create module for driver");
-                        tonic::Status::internal(e.to_string())
-                    })?;
-                ProgramComponent::WASM(WasmComponent {
-                    module
-                })
-            },
-            // CAIRO
-            1 => {
-                let program_address = self.provable_layer.declare_and_deploy_program(request.driver_binary, request.driver_compiled_hash, request.driver_constructor_data).await.map_err(|e| {
-                    tracing::error!(error = %e, "Failed to deploy driver");
+                .map_err(|e| {
+                    tracing::error!(error = %e, "Failed to create module for driver");
                     tonic::Status::internal(e.to_string())
                 })?;
-                ProgramComponent::Cairo(CairoComponent {
-                    program_address
-                })
-            },
+                ProgramComponent::WASM(WasmComponent { module })
+            }
+            // CAIRO
+            1 => {
+                let program_address = self
+                    .provable_layer
+                    .declare_and_deploy_program(
+                        request.driver_binary,
+                        request.driver_compiled_hash,
+                        request.driver_constructor_data,
+                    )
+                    .await
+                    .map_err(|e| {
+                        tracing::error!(error = %e, "Failed to deploy driver");
+                        tonic::Status::internal(e.to_string())
+                    })?;
+                ProgramComponent::Cairo(CairoComponent { program_address })
+            }
             _ => return Err(tonic::Status::invalid_argument("Invalid driver type")),
         };
 
@@ -431,7 +437,7 @@ impl server_traits::Driver for super::Runtime {
         self.driver_layer
             .add_driver(
                 request.driver_name.clone(),
-                module,
+                module.clone(),
                 request.driver_version.clone(),
             )
             .await
@@ -443,6 +449,13 @@ impl server_traits::Driver for super::Runtime {
         let response = types::LoadDriverResponse {
             driver_name: request.driver_name,
             driver_version: request.driver_version,
+            driver_address: if let ProgramComponent::Cairo(CairoComponent { program_address }) =
+                &module
+            {
+                Some(program_address.to_string())
+            } else {
+                None
+            },
         };
 
         tracing::info!(?response, "Driver loaded successfully");

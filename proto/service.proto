@@ -46,6 +46,7 @@ message LoadDriverRequest {
 message LoadDriverResponse {
   string driver_name = 2;
   string driver_version = 3;
+  optional string driver_address = 4;
 }
 
 message UnloadDriverRequest {
