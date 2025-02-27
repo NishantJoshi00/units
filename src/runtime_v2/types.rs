@@ -339,11 +339,8 @@ impl ProcessState {
                         let cairo_input: CairoInput = serde_json::from_str(input.as_str()).unwrap();
 
                         let program_input = cairo_input.program_input;
-                        let program_input_w_driver_details = format!(
-                            "0x1,{},{}",
-                            driver.program_address,
-                            program_input
-                        );
+                        let program_input_w_driver_details =
+                            format!("0x1,{},{}", driver.program_address, program_input);
 
                         // TODO: change error type of `perform_bind` to allow Cairo and WASM errors
                         self.provable_runtime
@@ -424,12 +421,8 @@ impl ProcessState {
                         let cairo_input: CairoInput = serde_json::from_str(input.as_str()).unwrap();
 
                         let program_input = cairo_input.program_input;
-                        let program_input_w_driver_details = format!(
-                            "0x1,{},{},{}",
-                            driver.program_address,
-                            selector!("bind"),
-                            program_input
-                        );
+                        let program_input_w_driver_details =
+                            format!("0x1,{},{}", driver.program_address, program_input);
 
                         // TODO: change error type of `perform_bind` to allow Cairo and WASM errors
                         // implement bind in Cairo
