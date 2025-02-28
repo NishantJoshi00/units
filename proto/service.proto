@@ -129,6 +129,7 @@ message Program {
 
 message SubmitProgramResponse {
   string program_id = 1;
+  optional string program_address = 2;
 }
 message ExecutionResponse { string output = 1; }
 

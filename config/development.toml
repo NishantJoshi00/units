@@ -14,7 +14,7 @@ driver_timeout = 200
 [platform]
 
 [provable]
-url = "https://madara-finternet.karnot.xyz"
+url = "https://madara-finternett.karnot.xyz/"
 operator_private_key = "0x7aad739a9b49c4a17f55d42050e1f0d64c9208ca5512dbeeac570590472a691"
 operator_address = "0x2d458ea38398292857095cc891197c475464ad91f735095b260cbcce4700159"
 chain_id = "0x4d41444152415f4445564e4554"

@@ -197,11 +197,20 @@ impl server_traits::Execution for super::Runtime {
         };
         let id = self
             .process_layer
-            .store_program(request.name, request.version, component)
+            .store_program(request.name, request.version, component.clone())
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-        let response = types::SubmitProgramResponse { program_id: id };
+        let response = types::SubmitProgramResponse {
+            program_id: id,
+            program_address: if let ProgramComponent::Cairo(CairoComponent { program_address }) =
+                &component
+            {
+                Some(program_address.to_string())
+            } else {
+                None
+            },
+        };
         tracing::info!(?response, "Program submitted successfully");
         Ok(Response::new(response))
     }
