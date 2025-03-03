@@ -68,6 +68,8 @@ const ProgramTable = ({ onRowSelect, selectedProgramId, onExecuteCTAClick }) => 
             <CardHeader>
                 <h3 className="mb-0">Program Details</h3>
                 <Button className='navigateToBindCTA' color="primary" type="submit" block onClick={() => window.location.href = '/admin/programs/upload'}>
+                <i class="fa-regular fa-plus"></i>
+                &nbsp;
                     Add
                 </Button>
             </CardHeader>

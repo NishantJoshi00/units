@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import {
     Card,
     CardBody,
@@ -18,7 +18,7 @@ import {
 } from "reactstrap";
 import { getDriverList, bindUser } from '../../grpcClient'
 
-const BindForm = () => {
+const BindForm = ({handleCheck}) => {
     const [driverName, setDriverName] = useState("");
     const [driverVersion, setDriverVersion] = useState("");
     const [path, setPath] = useState("");
@@ -66,6 +66,10 @@ const BindForm = () => {
 
     useEffect(() => {
         fetchDrivers()
+        if(JSON.parse(localStorage.getItem("jwtToken")) !==null){
+            handleCheck();
+    }
+        
     }, [])
 
     return (

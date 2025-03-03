@@ -17,7 +17,7 @@ const SupportTokenDetails = ({ data }) => {
     <Card className="shadow">
       <CardHeader>
         <h3 className="mb-0">Token Driver Details</h3>
-        <button onClick={addClickHandler} style={{ position: 'absolute', right: '18px', top: '18px', border: 'none', borderRadius: '10px', background: '#5e72e4', color: '#fff', padding: '6px 12px' }}>Add</button>
+        <button onClick={addClickHandler} style={{ position: 'absolute', right: '18px', top: '12px', border: 'none', borderRadius: '.25rem', background: '#5e72e4', color: '#fff', padding: '6px 12px' }}><i class="fa-regular fa-plus"></i>&nbsp; Add</button>
       </CardHeader>
       <CardBody>
         <Table responsive hover className="align-items-center">

@@ -37,7 +37,8 @@ const Execute = () => {
   const [output, setOutput] = useState([])
 
   const getOutput = (getByProgramId) => {
-    const output = localStorage.getItem("output")
+    // const output = localStorage.getItem("output")
+    const output= "";
     let outputObj = {}
   
     if(output) {

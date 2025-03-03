@@ -779,5 +779,344 @@ proto.finternet.DriverDetailsPromiseClient.prototype.sendDetails =
 };
 
 
+/**
+ * @param {string} hostname
+ * @param {?Object} credentials
+ * @param {?grpc.web.ClientOptions} options
+ * @constructor
+ * @struct
+ * @final
+ */
+proto.finternet.UserSignUpClient =
+    function(hostname, credentials, options) {
+  if (!options) options = {};
+  options.format = 'text';
+
+  /**
+   * @private @const {!grpc.web.GrpcWebClientBase} The client
+   */
+  this.client_ = new grpc.web.GrpcWebClientBase(options);
+
+  /**
+   * @private @const {string} The hostname
+   */
+  this.hostname_ = hostname.replace(/\/+$/, '');
+
+};
+
+
+/**
+ * @param {string} hostname
+ * @param {?Object} credentials
+ * @param {?grpc.web.ClientOptions} options
+ * @constructor
+ * @struct
+ * @final
+ */
+proto.finternet.UserSignUpPromiseClient =
+    function(hostname, credentials, options) {
+  if (!options) options = {};
+  options.format = 'text';
+
+  /**
+   * @private @const {!grpc.web.GrpcWebClientBase} The client
+   */
+  this.client_ = new grpc.web.GrpcWebClientBase(options);
+
+  /**
+   * @private @const {string} The hostname
+   */
+  this.hostname_ = hostname.replace(/\/+$/, '');
+
+};
+
+
+/**
+ * @const
+ * @type {!grpc.web.MethodDescriptor<
+ *   !proto.finternet.SignUpRequest,
+ *   !proto.finternet.SignUpResponse>}
+ */
+const methodDescriptor_UserSignUp_SignUp = new grpc.web.MethodDescriptor(
+  '/finternet.UserSignUp/SignUp',
+  grpc.web.MethodType.UNARY,
+  proto.finternet.SignUpRequest,
+  proto.finternet.SignUpResponse,
+  /**
+   * @param {!proto.finternet.SignUpRequest} request
+   * @return {!Uint8Array}
+   */
+  function(request) {
+    return request.serializeBinary();
+  },
+  proto.finternet.SignUpResponse.deserializeBinary
+);
+
+
+/**
+ * @param {!proto.finternet.SignUpRequest} request The
+ *     request proto
+ * @param {?Object<string, string>} metadata User defined
+ *     call metadata
+ * @param {function(?grpc.web.RpcError, ?proto.finternet.SignUpResponse)}
+ *     callback The callback function(error, response)
+ * @return {!grpc.web.ClientReadableStream<!proto.finternet.SignUpResponse>|undefined}
+ *     The XHR Node Readable Stream
+ */
+proto.finternet.UserSignUpClient.prototype.signUp =
+    function(request, metadata, callback) {
+  return this.client_.rpcCall(this.hostname_ +
+      '/finternet.UserSignUp/SignUp',
+      request,
+      metadata || {},
+      methodDescriptor_UserSignUp_SignUp,
+      callback);
+};
+
+
+/**
+ * @param {!proto.finternet.SignUpRequest} request The
+ *     request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!Promise<!proto.finternet.SignUpResponse>}
+ *     Promise that resolves to the response
+ */
+proto.finternet.UserSignUpPromiseClient.prototype.signUp =
+    function(request, metadata) {
+  return this.client_.unaryCall(this.hostname_ +
+      '/finternet.UserSignUp/SignUp',
+      request,
+      metadata || {},
+      methodDescriptor_UserSignUp_SignUp);
+};
+
+
+/**
+ * @param {string} hostname
+ * @param {?Object} credentials
+ * @param {?grpc.web.ClientOptions} options
+ * @constructor
+ * @struct
+ * @final
+ */
+proto.finternet.UserLoginClient =
+    function(hostname, credentials, options) {
+  if (!options) options = {};
+  options.format = 'text';
+
+  /**
+   * @private @const {!grpc.web.GrpcWebClientBase} The client
+   */
+  this.client_ = new grpc.web.GrpcWebClientBase(options);
+
+  /**
+   * @private @const {string} The hostname
+   */
+  this.hostname_ = hostname.replace(/\/+$/, '');
+
+};
+
+
+/**
+ * @param {string} hostname
+ * @param {?Object} credentials
+ * @param {?grpc.web.ClientOptions} options
+ * @constructor
+ * @struct
+ * @final
+ */
+proto.finternet.UserLoginPromiseClient =
+    function(hostname, credentials, options) {
+  if (!options) options = {};
+  options.format = 'text';
+
+  /**
+   * @private @const {!grpc.web.GrpcWebClientBase} The client
+   */
+  this.client_ = new grpc.web.GrpcWebClientBase(options);
+
+  /**
+   * @private @const {string} The hostname
+   */
+  this.hostname_ = hostname.replace(/\/+$/, '');
+
+};
+
+
+/**
+ * @const
+ * @type {!grpc.web.MethodDescriptor<
+ *   !proto.finternet.LoginRequest,
+ *   !proto.finternet.LoginResponse>}
+ */
+const methodDescriptor_UserLogin_Login = new grpc.web.MethodDescriptor(
+  '/finternet.UserLogin/Login',
+  grpc.web.MethodType.UNARY,
+  proto.finternet.LoginRequest,
+  proto.finternet.LoginResponse,
+  /**
+   * @param {!proto.finternet.LoginRequest} request
+   * @return {!Uint8Array}
+   */
+  function(request) {
+    return request.serializeBinary();
+  },
+  proto.finternet.LoginResponse.deserializeBinary
+);
+
+
+/**
+ * @param {!proto.finternet.LoginRequest} request The
+ *     request proto
+ * @param {?Object<string, string>} metadata User defined
+ *     call metadata
+ * @param {function(?grpc.web.RpcError, ?proto.finternet.LoginResponse)}
+ *     callback The callback function(error, response)
+ * @return {!grpc.web.ClientReadableStream<!proto.finternet.LoginResponse>|undefined}
+ *     The XHR Node Readable Stream
+ */
+proto.finternet.UserLoginClient.prototype.login =
+    function(request, metadata, callback) {
+  return this.client_.rpcCall(this.hostname_ +
+      '/finternet.UserLogin/Login',
+      request,
+      metadata || {},
+      methodDescriptor_UserLogin_Login,
+      callback);
+};
+
+
+/**
+ * @param {!proto.finternet.LoginRequest} request The
+ *     request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!Promise<!proto.finternet.LoginResponse>}
+ *     Promise that resolves to the response
+ */
+proto.finternet.UserLoginPromiseClient.prototype.login =
+    function(request, metadata) {
+  return this.client_.unaryCall(this.hostname_ +
+      '/finternet.UserLogin/Login',
+      request,
+      metadata || {},
+      methodDescriptor_UserLogin_Login);
+};
+
+
+/**
+ * @param {string} hostname
+ * @param {?Object} credentials
+ * @param {?grpc.web.ClientOptions} options
+ * @constructor
+ * @struct
+ * @final
+ */
+proto.finternet.UserCheckClient =
+    function(hostname, credentials, options) {
+  if (!options) options = {};
+  options.format = 'text';
+
+  /**
+   * @private @const {!grpc.web.GrpcWebClientBase} The client
+   */
+  this.client_ = new grpc.web.GrpcWebClientBase(options);
+
+  /**
+   * @private @const {string} The hostname
+   */
+  this.hostname_ = hostname.replace(/\/+$/, '');
+
+};
+
+
+/**
+ * @param {string} hostname
+ * @param {?Object} credentials
+ * @param {?grpc.web.ClientOptions} options
+ * @constructor
+ * @struct
+ * @final
+ */
+proto.finternet.UserCheckPromiseClient =
+    function(hostname, credentials, options) {
+  if (!options) options = {};
+  options.format = 'text';
+
+  /**
+   * @private @const {!grpc.web.GrpcWebClientBase} The client
+   */
+  this.client_ = new grpc.web.GrpcWebClientBase(options);
+
+  /**
+   * @private @const {string} The hostname
+   */
+  this.hostname_ = hostname.replace(/\/+$/, '');
+
+};
+
+
+/**
+ * @const
+ * @type {!grpc.web.MethodDescriptor<
+ *   !proto.finternet.CheckRequest,
+ *   !proto.finternet.CheckResponse>}
+ */
+const methodDescriptor_UserCheck_Check = new grpc.web.MethodDescriptor(
+  '/finternet.UserCheck/Check',
+  grpc.web.MethodType.UNARY,
+  proto.finternet.CheckRequest,
+  proto.finternet.CheckResponse,
+  /**
+   * @param {!proto.finternet.CheckRequest} request
+   * @return {!Uint8Array}
+   */
+  function(request) {
+    return request.serializeBinary();
+  },
+  proto.finternet.CheckResponse.deserializeBinary
+);
+
+
+/**
+ * @param {!proto.finternet.CheckRequest} request The
+ *     request proto
+ * @param {?Object<string, string>} metadata User defined
+ *     call metadata
+ * @param {function(?grpc.web.RpcError, ?proto.finternet.CheckResponse)}
+ *     callback The callback function(error, response)
+ * @return {!grpc.web.ClientReadableStream<!proto.finternet.CheckResponse>|undefined}
+ *     The XHR Node Readable Stream
+ */
+proto.finternet.UserCheckClient.prototype.check =
+    function(request, metadata, callback) {
+  return this.client_.rpcCall(this.hostname_ +
+      '/finternet.UserCheck/Check',
+      request,
+      metadata || {},
+      methodDescriptor_UserCheck_Check,
+      callback);
+};
+
+
+/**
+ * @param {!proto.finternet.CheckRequest} request The
+ *     request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!Promise<!proto.finternet.CheckResponse>}
+ *     Promise that resolves to the response
+ */
+proto.finternet.UserCheckPromiseClient.prototype.check =
+    function(request, metadata) {
+  return this.client_.unaryCall(this.hostname_ +
+      '/finternet.UserCheck/Check',
+      request,
+      metadata || {},
+      methodDescriptor_UserCheck_Check);
+};
+
+
 module.exports = proto.finternet;
 

@@ -2,7 +2,7 @@ import { getResolverList, getDriverList } from '../../grpcClient'
 import { useEffect, useState } from "react";
 import AccountInfoTable from './UsersTable'
 
-const Users = () => {
+const Users = (props) => {
   const [userList, setUserList] = useState([])
   const [drivers, setDrivers] = useState([])
   const [selectedDrivers, setSelectedDrivers] = useState([])
@@ -53,7 +53,7 @@ const Users = () => {
 
   return (
     <div className='support-tokens-container'>
-      <AccountInfoTable data={userList} />
+      <AccountInfoTable data={userList} theUser={props.theUser} />
     </div>
   );
 };

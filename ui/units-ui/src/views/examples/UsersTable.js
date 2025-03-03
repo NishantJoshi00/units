@@ -13,7 +13,7 @@ import {
   DropdownItem
 } from 'reactstrap';
 
-const UsersTable = ({ data }) => {
+const UsersTable = ({ data, theUser }) => {
   const [expandedRows, setExpandedRows] = useState({});
   const [users, setUsers] = useState([]);
   const [groupedData, setGroupedData] = useState({});
@@ -29,24 +29,27 @@ const UsersTable = ({ data }) => {
 
   useEffect(() => {
     // Load users from localStorage
-    const savedUsers = localStorage.getItem('users');
-    if (savedUsers) {
-      setUsers(JSON.parse(savedUsers));
-    }
+    // const savedUsers = localStorage.getItem('users');
+    // if (savedUsers) {
+    //   setUsers(JSON.parse(savedUsers));
+    // }
   }, []);
+
+  // console.log("theUser", theUser)
 
   useEffect(() => {
     // Group the data by username and match drivers with user suffixes
-    const grouped = {};
+    let username= theUser;
+    const grouped = {[username]: { username: username, bindings: [],id:username}};
 
-    // First, organize localStorage users
-    users.forEach(user => {
-      grouped[user.username] = {
-        username: user.username,
-        bindings: user.bindings || [],
-        id: user.id
-      };
-    });
+    // // First, organize localStorage users
+    // users.forEach(user => {
+    //   grouped[theUser] = {
+    //     username: theUser,
+    //     bindings: user.bindings || [],
+    //     id: user.id
+    //   };
+    // });
 
     // Then, process gRPC data and match by suffix
     data.forEach(item => {
@@ -60,24 +63,24 @@ const UsersTable = ({ data }) => {
 
       // Find matching user by suffix
       const matchingUser = Object.values(grouped).find(user =>
-        item.driverName.toLowerCase().endsWith(user.username.toLowerCase())
+        item.driverName.toLowerCase().endsWith(username.toLowerCase())
       );
 
       if (matchingUser) {
         // Add to existing user's bindings
-        grouped[matchingUser.username].bindings.push({
+        grouped[theUser].bindings.push({
           ...item,
           accountInfo: accountInfo
         });
       } else if (!grouped[username]) {
         // Create new user entry if no match found
-        grouped[username] = {
-          username: username,
-          bindings: [{
-            ...item,
-            accountInfo: accountInfo
-          }]
-        };
+        // grouped[username] = {
+        //   username: username,
+        //   bindings: [{
+        //     ...item,
+        //     accountInfo: accountInfo
+        //   }]
+        // };
       } else {
         // Add to existing user's bindings
         grouped[username].bindings.push({
@@ -134,15 +137,15 @@ const UsersTable = ({ data }) => {
     <Card className="shadow users mx-auto" style={{ maxWidth: '90%', minWidth: '800px' }}>
       <CardHeader className="border-0" onContextMenu={headerContextClick}>
         <div className="d-flex justify-content-between align-items-center">
-          <h3 className="mb-0">Users</h3>
-          <Button
-            className='navigateToBindCTA'
+          <h3 className="mb-0">User</h3>
+          {/* <Button
+            className='navigateToBindCTA-2'
             color="primary"
             onClick={() => window.location.href = '/admin/users/add'}
           >
             <i class="fa-solid fa-user-plus"></i>
             &nbsp;&nbsp;Add User
-          </Button>
+          </Button> */}
         </div>
       </CardHeader>
       <CardBody>

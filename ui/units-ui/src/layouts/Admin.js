@@ -15,7 +15,7 @@
 * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 */
-import React from "react";
+import React, { useEffect } from "react";
 import { useLocation, Route, Routes, Navigate } from "react-router-dom";
 import Sidebar from "components/Sidebar/Sidebar.js";
 import Home from "views/examples/Home.js";
@@ -32,8 +32,9 @@ const Admin = (props) => {
 
   const getRoutes = (routes) => {
     return routes.flatMap((prop, key) => {
+      const Comp = prop.component
       let mainRoute = prop.layout === "/admin" ? (
-        <Route path={prop.path} element={prop.component} key={key} exact />
+        <Route path={prop.path} element={<Comp {...props} />} key={key} exact />
       ) : null;
 
       let subRoutes = prop.subItems
@@ -50,7 +51,7 @@ const Admin = (props) => {
       return [mainRoute, ...subRoutes].filter(Boolean);
     });
   };
-
+ 
   console.log("props", props);
 
   return (
@@ -63,13 +64,13 @@ const Admin = (props) => {
         <MyBreadcrumb />
         <Routes>
           {getRoutes(routes)}
-          <Route path="/home" element={<Home />} />
-          <Route path="/users/bind" element={<BindForm />} />
-          <Route path="/users/add" element={<AddUserForm />} />
-          <Route path="/programs/upload" element={<Submit />} />
-          <Route path="/programs/execute" element={<Execute />} />
-          <Route path="/supported-token-drivers/upload" element={<Upload />} />
-          <Route path="*" element={<Navigate to="/admin/home" replace />} />
+          <Route path="/home" element={<Home theUser={props.theUser}/>} />
+          <Route path="/users/bind" element={<BindForm handleCheck={props.handleCheck} theUser={props.theUser}/>} />
+          <Route path="/users/add" element={<AddUserForm theUser={props.theUser}/>} />
+          <Route path="/programs/upload" element={<Submit handleCheck={props.handleCheck} theUser={props.theUser}/>} />
+          <Route path="/programs/execute" element={<Execute handleCheck={props.handleCheck} theUser={props.theUser}/>} />
+          <Route path="/supported-token-drivers/upload" element={<Upload handleCheck={props.handleCheck} theUser={props.theUser}/>} />
+          <Route path="*" element={<Navigate to="/admin/home" replace theUser={props.theUser} />} />
         </Routes>
       </div>
     </>

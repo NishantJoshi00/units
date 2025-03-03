@@ -1,7 +1,7 @@
 use anyhow::Context;
 use grpc::proto_types::{BindRequest, CheckRequest, LoadDriverRequest, LoginRequest};
 use shelgon::{command, renderer};
-use tonic::metadata::{Ascii, MetadataMap, MetadataValue};
+use tonic::metadata::{Ascii, MetadataValue};
 
 mod config;
 mod grpc;
@@ -27,6 +27,7 @@ enum Command {
     Cd(String),
     Ls,
     LsMod,
+    LsProg,
     Pwd,
     Clear,
     Exit,
@@ -44,6 +45,7 @@ impl From<&str> for Command {
             Some("cd") => Command::Cd(parts.get(1).unwrap_or(&"").to_string()),
             Some("ls") => Command::Ls,
             Some("lsdriver") => Command::LsMod,
+            Some("lsprog") => Command::LsProg,
             Some("pwd") => Command::Pwd,
             Some("clear") => Command::Clear,
             Some("exit") => Command::Exit,
@@ -194,6 +196,21 @@ impl command::Execute for FinShellExecutor {
                     .map(|d| format!("{}@{}", d.name, d.version))
                     .collect()
             }
+            Command::LsProg => {
+                let output = rt
+                    .block_on(
+                        ctx.client
+                            .exec_client
+                            .list(grpc::proto_types::ListProgramRequest {}),
+                    )?
+                    .into_inner();
+
+                output
+                    .program
+                    .iter()
+                    .map(|p| format!("{}\t{}@{}", p.program_id, p.name, p.version))
+                    .collect()
+            }
             Command::Help => {
                 vec![
                     "Available commands:".to_string(),
@@ -206,6 +223,7 @@ impl command::Execute for FinShellExecutor {
                     "  insdriver <driver_name> <driver_version> <driver_fn> Load a driver".to_string(),
                     "  ls                                                List files in the current directory".to_string(),
                     "  lsdriver                                             List loaded kernel modules".to_string(),
+                    "  lsprog                                             List loaded programs".to_string(),
                     "  link <driver_name> <driver_version> <path>       Bind a driver".to_string(),
                     "  pwd                                               Print the current working directory".to_string(),
                     "  rmdriver <driver_name> <driver_version>              Unload a driver".to_string(),
@@ -400,6 +418,7 @@ impl command::Execute for FinShellExecutor {
             "insdriver",
             "ls",
             "lsdriver",
+            "lsprog",
             "link",
             "pwd",
             "rmdriver",
