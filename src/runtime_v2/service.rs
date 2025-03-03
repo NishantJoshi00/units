@@ -64,7 +64,7 @@ fn check_jwt<T>(request: &Request<T>) -> Result<UserData, Box<dyn Error>> {
         }
     };
 
-    let secret = env::var("secret").unwrap();
+    let secret = env::var("SECRET").unwrap();
     let claims = decode::<Claims>(
         &token,
         &DecodingKey::from_secret(secret.as_bytes()),
@@ -104,7 +104,7 @@ fn get_user_id<T>(request: &Request<T>) -> Result<String, Box<dyn Error>> {
         None => return Err(Box::new(Status::unauthenticated("No JWT token found"))),
     };
 
-    let secret = env::var("secret").unwrap();
+    let secret = env::var("SECRET").unwrap();
     let claims = decode::<Claims>(
         &token,
         &DecodingKey::from_secret(secret.as_bytes()),
@@ -446,7 +446,7 @@ impl server_traits::UserLogin for super::Runtime {
                         .unwrap()
                         .as_secs() as usize,
                 };
-                let secret = env::var("secret").unwrap();
+                let secret = env::var("SECRET").unwrap();
 
                 let token = encode(
                     &Header::default(),
